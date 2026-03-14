@@ -1,3 +1,9 @@
+import java.util.Properties
+
+val localProperties = Properties().apply {
+    load(rootProject.file("local.properties").inputStream())
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -19,6 +25,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "SUPABASE_URL", "\"${properties["SUPABASE_URL"]}\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"${properties["SUPABASE_KEY"]}\"")
     }
 
     buildTypes {
@@ -36,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -48,6 +58,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    // Supabase
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.1.1"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    // Ktor
+    implementation("io.ktor:ktor-client-okhttp:3.1.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
