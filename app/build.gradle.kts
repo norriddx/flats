@@ -27,8 +27,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "SUPABASE_URL", "\"${properties["SUPABASE_URL"]}\"")
-        buildConfigField("String", "SUPABASE_KEY", "\"${properties["SUPABASE_KEY"]}\"")
+        buildConfigField("String", "SUPABASE_URL", "\"${localProperties["SUPABASE_URL"]}\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"${localProperties["SUPABASE_KEY"]}\"")
     }
 
     buildTypes {
