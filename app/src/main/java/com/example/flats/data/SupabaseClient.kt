@@ -4,6 +4,8 @@ import com.example.flats.BuildConfig
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.serializer.KotlinXSerializer
+import kotlinx.serialization.json.Json
 
 object SupabaseClient {
     val client = createSupabaseClient(
@@ -11,6 +13,10 @@ object SupabaseClient {
         supabaseKey = BuildConfig.SUPABASE_KEY
     ) {
         install(Auth)
-        install(Postgrest)
+        install(Postgrest) {
+            serializer = KotlinXSerializer(Json {
+                encodeDefaults = false
+            })
+        }
     }
 }
