@@ -36,7 +36,6 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -75,16 +74,6 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = phone,
-            onValueChange = { phone = it },
-            label = { Text("Телефон (необязательно)") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            modifier = Modifier.fillMaxWidth()
-        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -118,8 +107,7 @@ fun RegisterScreen(
                         AuthRepository.signUp(
                             email = email.trim(),
                             password = password,
-                            username = username.trim(),
-                            phone = phone.trim().ifEmpty { null }
+                            username = username.trim()
                         )
                         onRegisterSuccess()
                     } catch (e: Exception) {

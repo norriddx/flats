@@ -12,8 +12,7 @@ object AuthRepository {
     suspend fun signUp(
         email: String,
         password: String,
-        username: String,
-        phone: String?
+        username: String
     ) {
         client.auth.signUpWith(Email) {
             this.email = email
@@ -28,8 +27,7 @@ object AuthRepository {
         val newUser = User(
             userId = uid,
             username = username,
-            email = email,
-            phone = phone
+            email = email
         )
 
         client.postgrest.from("user").insert(newUser)

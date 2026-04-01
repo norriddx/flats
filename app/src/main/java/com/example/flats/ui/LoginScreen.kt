@@ -1,19 +1,15 @@
 package com.example.flats.ui
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +22,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.flats.data.AuthRepository
+import com.example.flats.ui.components.Button
+import com.example.flats.ui.components.TextField
+import com.example.flats.ui.theme.Blue
+import com.example.flats.ui.theme.Dark
+import com.example.flats.ui.theme.Gray
+import com.example.flats.ui.theme.Typography
 import kotlinx.coroutines.launch
 
 @Composable
@@ -40,87 +42,95 @@ fun LoginScreen(
 
     val scope = rememberCoroutineScope()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .imePadding()
     ) {
-        Text(
-            text = "Вход",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Пароль") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (error != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = error!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                isLoading = true
-                error = null
-                scope.launch {
-                    try {
-                        AuthRepository.signIn(
-                            email = email.trim(),
-                            password = password
-                        )
-                        onLoginSuccess()
-                    } catch (e: Exception) {
-                        error = e.message ?: "Ошибка входа"
-                    } finally {
-                        isLoading = false
-                    }
-                }
-            },
-            enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = "Вход",
+                style = Typography.headlineLarge,
+                color = Dark
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            TextField(
+                value = email,
+                onValueChange = { email = it },
+                placeholder = "Почта",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextField(
+                value = password,
+                onValueChange = { password = it },
+                placeholder = "Пароль",
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            )
+
+            if (error != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error!!,
+                    color = Blue,
+                    style = Typography.bodySmall
                 )
-            } else {
-                Text("Войти")
             }
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(onClick = onNavigateToRegister) {
-            Text("Нет аккаунта? Зарегистрироваться")
+            Button(
+                text = "Войти",
+                onClick = {
+                    isLoading = true
+                    error = null
+                    scope.launch {
+                        try {
+                            AuthRepository.signIn(
+                                email = email.trim(),
+                                password = password
+                            )
+                            onLoginSuccess()
+                        } catch (e: Exception) {
+                            error = e.message ?: "Ошибка входа"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                },
+                enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Нет аккаунта?",
+                style = Typography.bodySmall,
+                color = Gray
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Зарегистрироваться",
+                style = Typography.bodySmall,
+                color = Blue,
+                modifier = Modifier.clickable { onNavigateToRegister() }
+            )
+
+            Spacer(modifier = Modifier.weight(0.6f))
         }
     }
 }

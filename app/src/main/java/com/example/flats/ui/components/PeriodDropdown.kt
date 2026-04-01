@@ -81,20 +81,20 @@ fun PeriodDropdown(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-@Composable
-fun PeriodDropdownCollapsedPreview() {
-    FlatsTheme {
-        PeriodDropdown(selected = "month", onSelect = {})
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-@Composable
-fun PeriodDropdownExpandedPreview() {
-    FlatsTheme {
-        Box(modifier = Modifier.height(150.dp)) {
-            PeriodDropdown(selected = "month", onSelect = {}, initialExpanded = true)
-        }
-    }
-}
+//@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+//@Composable
+//fun PeriodDropdownCollapsedPreview() {
+//    FlatsTheme {
+//        PeriodDropdown(selected = "month", onSelect = {})
+//    }
+//}
+//
+//@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+//@Composable
+//fun PeriodDropdownExpandedPreview() {
+//    FlatsTheme {
+//        Box(modifier = Modifier.height(150.dp)) {
+//            PeriodDropdown(selected = "month", onSelect = {}, initialExpanded = true)
+//        }
+//    }
+//}
