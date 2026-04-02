@@ -28,6 +28,7 @@ import com.example.flats.ui.components.TextField
 import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
+import com.example.flats.ui.theme.Red
 import com.example.flats.ui.theme.Typography
 import kotlinx.coroutines.launch
 
@@ -51,16 +52,19 @@ fun LoginScreen(
         generalError = null
 
         val trimmedEmail = email.trim()
+        var hasError = false
 
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
             emailError = "Некорректный формат почты"
-            return
+            hasError = true
         }
 
         if (password.length < 6) {
             passwordError = "Минимум 6 символов"
-            return
+            hasError = true
         }
+
+        if (hasError) return
 
         isLoading = true
         scope.launch {
@@ -119,11 +123,11 @@ fun LoginScreen(
             )
 
             if (emailError != null) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = emailError!!,
                     style = Typography.bodySmall,
-                    color = Blue
+                    color = Red
                 )
             }
 
@@ -142,11 +146,11 @@ fun LoginScreen(
             )
 
             if (passwordError != null) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = passwordError!!,
                     style = Typography.bodySmall,
-                    color = Blue
+                    color = Red
                 )
             }
 
@@ -155,7 +159,7 @@ fun LoginScreen(
                 Text(
                     text = generalError!!,
                     style = Typography.bodySmall,
-                    color = Blue
+                    color = Red
                 )
             }
 
