@@ -38,9 +38,52 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var generalError by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
+
+    fun validateAndSubmit() {
+        emailError = null
+        passwordError = null
+        generalError = null
+
+        val trimmedEmail = email.trim()
+
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
+            emailError = "Некорректный формат почты"
+            return
+        }
+
+        if (password.length < 6) {
+            passwordError = "Минимум 6 символов"
+            return
+        }
+
+        isLoading = true
+        scope.launch {
+            try {
+                AuthRepository.signIn(
+                    email = trimmedEmail,
+                    password = password
+                )
+                onLoginSuccess()
+            } catch (e: Exception) {
+                val message = e.message?.lowercase() ?: ""
+                generalError = when {
+                    "invalid login credentials" in message -> "Неверная почта или пароль"
+                    "email not confirmed" in message -> "Почта не подтверждена"
+                    "too many requests" in message -> "Слишком много попыток. Попробуйте позже"
+                    "network" in message || "unable to resolve host" in message -> "Нет подключения к интернету"
+                    "timeout" in message -> "Сервер не отвечает. Попробуйте позже"
+                    else -> "Ошибка входа: ${e.message}"
+                }
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -65,27 +108,53 @@ fun LoginScreen(
 
             TextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    emailError = null
+                    generalError = null
+                },
                 placeholder = "Почта",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
+
+            if (emailError != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = emailError!!,
+                    style = Typography.bodySmall,
+                    color = Blue
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             TextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    passwordError = null
+                    generalError = null
+                },
                 placeholder = "Пароль",
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
 
-            if (error != null) {
+            if (passwordError != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = passwordError!!,
+                    style = Typography.bodySmall,
+                    color = Blue
+                )
+            }
+
+            if (generalError != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = error!!,
-                    color = Blue,
-                    style = Typography.bodySmall
+                    text = generalError!!,
+                    style = Typography.bodySmall,
+                    color = Blue
                 )
             }
 
@@ -93,23 +162,7 @@ fun LoginScreen(
 
             Button(
                 text = "Войти",
-                onClick = {
-                    isLoading = true
-                    error = null
-                    scope.launch {
-                        try {
-                            AuthRepository.signIn(
-                                email = email.trim(),
-                                password = password
-                            )
-                            onLoginSuccess()
-                        } catch (e: Exception) {
-                            error = e.message ?: "Ошибка входа"
-                        } finally {
-                            isLoading = false
-                        }
-                    }
-                },
+                onClick = { validateAndSubmit() },
                 enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
             )
 
