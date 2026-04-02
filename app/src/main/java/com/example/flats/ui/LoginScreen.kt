@@ -1,6 +1,7 @@
 package com.example.flats.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -180,7 +181,10 @@ fun LoginScreen(
                 text = "Зарегистрироваться",
                 style = Typography.bodySmall,
                 color = Blue,
-                modifier = Modifier.clickable { onNavigateToRegister() }
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onNavigateToRegister() }
             )
 
             Spacer(modifier = Modifier.weight(0.6f))
