@@ -151,7 +151,8 @@ fun RegisterScreen(
                 Text(
                     text = usernameError!!,
                     style = Typography.bodySmall,
-                    color = Red
+                    color = Red,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -173,7 +174,8 @@ fun RegisterScreen(
                 Text(
                     text = emailError!!,
                     style = Typography.bodySmall,
-                    color = Red
+                    color = Red,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -213,7 +215,8 @@ fun RegisterScreen(
                 Text(
                     text = passwordError!!,
                     style = Typography.bodySmall,
-                    color = Red
+                    color = Red,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -251,7 +254,8 @@ fun RegisterScreen(
                 Text(
                     text = generalError!!,
                     style = Typography.bodySmall,
-                    color = Red
+                    color = Red,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
