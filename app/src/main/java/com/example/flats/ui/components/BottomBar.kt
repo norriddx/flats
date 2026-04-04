@@ -16,10 +16,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,19 +38,22 @@ sealed class BottomNavItem(val route: String, val iconRes: Int) {
 }
 
 private fun Modifier.topShadow(
-    color: Color = Color(0x19000000),
-    blur: Dp = 10.dp,
-    offsetY: Dp = (-2).dp
-): Modifier = drawBehind {
-    drawIntoCanvas { canvas ->
-        val paint = Paint()
-        val frameworkPaint = paint.asFrameworkPaint()
-        frameworkPaint.isAntiAlias = true
-        frameworkPaint.color = android.graphics.Color.TRANSPARENT
-        frameworkPaint.setShadowLayer(blur.toPx(), 0f, offsetY.toPx(), color.toArgb())
-        canvas.drawRect(0f, 0f, size.width, size.height, paint)
+    height: Dp = 12.dp,
+    color: Color = Color(0x0A000000)
+): Modifier = this.then(
+    Modifier.drawBehind {
+        val shadowPx = height.toPx()
+        drawRect(
+            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(Color.Transparent, color),
+                startY = -shadowPx,
+                endY = 0f
+            ),
+            topLeft = androidx.compose.ui.geometry.Offset(0f, -shadowPx),
+            size = size.copy(height = shadowPx)
+        )
     }
-}
+)
 
 @Composable
 fun BottomBar(
