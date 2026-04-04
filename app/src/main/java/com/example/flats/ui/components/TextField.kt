@@ -28,6 +28,7 @@ fun TextField(
     enabled: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     OutlinedTextField(
@@ -48,6 +49,7 @@ fun TextField(
         shape = RoundedCornerShape(10.dp),
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
+        leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
         textStyle = Typography.bodyLarge.copy(color = Dark),
         colors = TextFieldDefaults.colors(
@@ -61,4 +63,3 @@ fun TextField(
         )
     )
 }
-
