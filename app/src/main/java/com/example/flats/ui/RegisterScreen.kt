@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.flats.R
 import com.example.flats.data.AuthRepository
@@ -53,6 +54,7 @@ fun RegisterScreen(
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var generalError by remember { mutableStateOf<String?>(null) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -185,8 +187,25 @@ fun RegisterScreen(
                     generalError = null
                 },
                 placeholder = "Пароль",
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                visualTransformation = if (passwordVisible) VisualTransformation.None
+                else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    Icon(
+                        painter = painterResource(
+                            if (passwordVisible) R.drawable.ic_eye_open
+                            else R.drawable.ic_eye_closed
+                        ),
+                        contentDescription = null,
+                        tint = Dark,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { passwordVisible = !passwordVisible }
+                    )
+                }
             )
 
             if (passwordError != null) {
