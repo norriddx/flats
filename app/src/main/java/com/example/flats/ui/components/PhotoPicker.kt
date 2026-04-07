@@ -5,13 +5,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -23,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.flats.R
@@ -31,11 +31,9 @@ import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.LightBlue
 import com.example.flats.ui.theme.Gray
 
-
 private val CellSize = 84.dp
 private val CellShape = RoundedCornerShape(10.dp)
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PhotoPicker(
     images: List<Uri>,
@@ -47,10 +45,9 @@ fun PhotoPicker(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris -> if (uris.isNotEmpty()) onAdd(uris) }
 
-    FlowRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         images.forEach { uri ->
             Box(
@@ -85,7 +82,6 @@ fun PhotoPicker(
             }
         }
 
-        // Кнопка добавления
         Box(
             modifier = Modifier
                 .size(CellSize)
@@ -105,10 +101,3 @@ fun PhotoPicker(
         }
     }
 }
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun PhotoPickerEmptyPreview() {
-//    PhotoPicker(images = emptyList(), onAdd = {}, onDelete = {})
-//}
-
