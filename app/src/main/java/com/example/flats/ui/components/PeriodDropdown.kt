@@ -2,19 +2,31 @@ package com.example.flats.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.flats.R
-import com.example.flats.ui.theme.*
+import com.example.flats.ui.theme.Dark
+import com.example.flats.ui.theme.Gray
+import com.example.flats.ui.theme.Typography
+import com.example.flats.ui.theme.White
 
 @Composable
 fun PeriodDropdown(
@@ -32,7 +44,10 @@ fun PeriodDropdown(
         Row(
             modifier = Modifier
                 .background(White, RoundedCornerShape(4.dp))
-                .clickable { expanded = !expanded }
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { expanded = !expanded }
                 .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -48,53 +63,28 @@ fun PeriodDropdown(
             )
         }
 
-        if (expanded) {
-            Column(
-                modifier = Modifier
-                    .padding(top = 24.dp)
-                    .shadow(
-                        elevation = 4.dp,
-                        shape = RoundedCornerShape(4.dp),
-                        spotColor = Color(0x0C000000),
-                        ambientColor = Color(0x0C000000)
-                    )
-                    .background(White, RoundedCornerShape(4.dp))
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                options.forEach { (value, label) ->
-                    Text(
-                        text = label,
-                        style = Typography.bodyMedium,
-                        color = Gray,
-                        modifier = Modifier
-                            .clickable {
-                                onSelect(value)
-                                expanded = false
-                            }
-                            .padding(vertical = 4.dp, horizontal = 8.dp)
-                    )
-                }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            containerColor = White,
+            shape = RoundedCornerShape(4.dp)
+        ) {
+            options.forEach { (value, label) ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = label,
+                            style = Typography.bodyMedium,
+                            color = Gray
+                        )
+                    },
+                    onClick = {
+                        onSelect(value)
+                        expanded = false
+                    },
+                    interactionSource = remember { MutableInteractionSource() }
+                )
             }
         }
     }
 }
-
-//@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-//@Composable
-//fun PeriodDropdownCollapsedPreview() {
-//    FlatsTheme {
-//        PeriodDropdown(selected = "month", onSelect = {})
-//    }
-//}
-//
-//@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-//@Composable
-//fun PeriodDropdownExpandedPreview() {
-//    FlatsTheme {
-//        Box(modifier = Modifier.height(150.dp)) {
-//            PeriodDropdown(selected = "month", onSelect = {}, initialExpanded = true)
-//        }
-//    }
-//}
