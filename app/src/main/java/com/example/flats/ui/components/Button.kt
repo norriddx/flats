@@ -22,6 +22,7 @@ import com.example.flats.ui.theme.Typography
 import com.example.flats.ui.theme.White
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.text.style.TextAlign
 import com.example.flats.ui.theme.LightBlue
 import com.example.flats.ui.theme.White
 
@@ -97,7 +98,8 @@ fun SecondaryButton(
     ) {
         Text(
             text  = text,
-            style = Typography.labelLarge
+            style = Typography.labelLarge,
+            textAlign = TextAlign.Center
         )
     }
 }
