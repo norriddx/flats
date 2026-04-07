@@ -39,6 +39,7 @@ import com.example.flats.ui.theme.Typography
 @Composable
 fun CardsScreen(
     onNavigateToComparison: () -> Unit,
+    onNavigateToCreateCard: () -> Unit,
     onLogout: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -103,7 +104,7 @@ fun CardsScreen(
         }
 
         FAB(
-            onClick = { /* TODO */ },
+            onClick = onNavigateToCreateCard,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 100.dp)

@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import com.example.flats.data.SupabaseClient
 import com.example.flats.ui.screens.auth.AuthScreen
 import com.example.flats.ui.screens.cards.CardsScreen
+import com.example.flats.ui.screens.cards.CreateCardScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import io.github.jan.supabase.auth.auth
 
@@ -31,11 +32,19 @@ fun NavGraph(navController: NavHostController) {
         composable(Routes.CARDS) {
             CardsScreen(
                 onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
+                onNavigateToCreateCard = { navController.navigate(Routes.CREATE_CARD) },
                 onLogout = {
                     navController.navigate(Routes.AUTH) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Routes.CREATE_CARD) {
+            CreateCardScreen(
+                onBack = { navController.popBackStack() },
+                onDelete = { navController.popBackStack() }
             )
         }
 
