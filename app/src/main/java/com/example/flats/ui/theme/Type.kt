@@ -4,35 +4,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.flats.R
 import androidx.compose.material3.Typography
 
-val googleFontProvider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage   = "com.google.android.gms",
-    certificates      = R.array.com_google_android_gms_fonts_certs
-)
-
 val RalewayFamily = FontFamily(
-    Font(
-        googleFont    = GoogleFont("Raleway"),
-        fontProvider  = googleFontProvider,
-        weight        = FontWeight.Normal
-    ),
-    Font(
-        googleFont    = GoogleFont("Raleway"),
-        fontProvider  = googleFontProvider,
-        weight        = FontWeight.Medium
-    ),
-    Font(
-        googleFont    = GoogleFont("Raleway"),
-        fontProvider  = googleFontProvider,
-        weight        = FontWeight.Bold
-    )
+    Font(R.font.raleway_regular, FontWeight.Normal),
+    Font(R.font.raleway_bold, FontWeight.Bold),
+    Font(R.font.raleway_medium, FontWeight.Medium)
 )
 
 val RGStandardFamily = FontFamily(
@@ -90,7 +70,7 @@ val Typography = Typography(
     )
 )
 
-// p bold — отдельный стиль, не покрывается слотами M3
+// p bold
 val BodyLargeBold = TextStyle(
     fontFamily    = RGStandardFamily,
     fontWeight    = FontWeight.Bold,
