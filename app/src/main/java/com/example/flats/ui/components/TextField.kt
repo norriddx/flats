@@ -1,5 +1,6 @@
 package com.example.flats.ui.components
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
@@ -26,6 +28,8 @@ fun TextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    singleLine: Boolean = true,
+    height: Dp = 60.dp,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     leadingIcon: @Composable (() -> Unit)? = null,
@@ -38,14 +42,15 @@ fun TextField(
             Text(
                 text = placeholder,
                 style = Typography.bodyLarge,
-                color = Gray
+                color = Gray,
+                modifier = if (!singleLine) Modifier.fillMaxSize() else Modifier
             )
         },
         modifier = modifier
             .fillMaxWidth()
-            .height(60.dp),
+            .height(height),
         enabled = enabled,
-        singleLine = true,
+        singleLine = singleLine,
         shape = RoundedCornerShape(10.dp),
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,

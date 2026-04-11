@@ -1,5 +1,6 @@
 package com.example.flats.ui.screens.cards
 
+import android.R.attr.description
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -84,6 +86,7 @@ fun CreateCardScreen(
     var pricePeriod by remember { mutableStateOf("month") }
     var utilitiesIncluded by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
+    var description by remember { mutableStateOf("") }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -129,6 +132,7 @@ fun CreateCardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
+                .imePadding()
         ) {
             TopBar(
                 title = "Создать просмотр",
@@ -222,7 +226,19 @@ fun CreateCardScreen(
                     Text(text = "Включены ЖКУ", style = Typography.bodyLarge, color = Dark)
                 }
 
-                Spacer(modifier = Modifier.height(100.dp))
+                // description
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(text = "Описание", style = Typography.headlineSmall, color = Dark)
+                Spacer(modifier = Modifier.height(16.dp))
+                TextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    placeholder = "Кратко опиши свои впечатления и мысли от просмотра",
+                    singleLine = false,
+                    height = 100.dp
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
             // buttons
