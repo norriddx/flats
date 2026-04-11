@@ -1,6 +1,5 @@
 package com.example.flats.ui.screens.cards
 
-import android.R.attr.description
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -15,16 +14,17 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,9 +40,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.flats.R
 import com.example.flats.data.CardRepository
 import com.example.flats.data.model.Card
+import com.example.flats.data.model.CardCriteriaScore
+import com.example.flats.data.model.Criteria
 import com.example.flats.ui.components.Button
 import com.example.flats.ui.components.PeriodDropdown
 import com.example.flats.ui.components.PhotoPicker
@@ -85,11 +88,20 @@ fun CreateCardScreen(
     var price by remember { mutableStateOf("") }
     var pricePeriod by remember { mutableStateOf("month") }
     var utilitiesIncluded by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
+
+    var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
+    var checkedCriteriaIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        try {
+            criteria = CardRepository.getCriteria()
+        } catch (_: Exception) {}
+    }
 
     fun saveCard(isDraft: Boolean) {
         if (isSaving) return
@@ -107,13 +119,24 @@ fun CreateCardScreen(
                     address = address.ifBlank { null },
                     price = price.toDoubleOrNull(),
                     square = square.toDoubleOrNull(),
+                    description = description.ifBlank { null },
                     pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                     utilitiesIncluded = utilitiesIncluded,
                     isDraft = isDraft,
                     imageUrl = imageUrl
                 )
 
-                CardRepository.insertCard(card)
+                val savedCard = CardRepository.insertCard(card)
+
+                val scores = checkedCriteriaIds.map { criteriaId ->
+                    CardCriteriaScore(
+                        cardId = savedCard.cardId,
+                        criteriaId = criteriaId,
+                        value = 1.0
+                    )
+                }
+                CardRepository.insertCardCriteriaScores(scores)
+
                 onBack()
             } catch (e: Exception) {
                 Toast.makeText(context, e.message ?: "Ошибка сохранения", Toast.LENGTH_SHORT).show()
@@ -215,7 +238,7 @@ fun CreateCardScreen(
                             else R.drawable.ic_check_box_empty
                         ),
                         contentDescription = null,
-                        tint = Blue,
+                        tint = Color.Unspecified,
                         modifier = Modifier
                             .size(24.dp)
                             .clickable(
@@ -237,6 +260,58 @@ fun CreateCardScreen(
                     singleLine = false,
                     height = 100.dp
                 )
+
+                // check list
+                if (criteria.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Чек-лист", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val left = criteria.filterIndexed { i, _ -> i % 2 == 0 }
+                    val right = criteria.filterIndexed { i, _ -> i % 2 == 1 }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            left.forEach { item ->
+                                ChecklistItem(
+                                    item = item,
+                                    checked = item.criteriaId in checkedCriteriaIds,
+                                    onToggle = {
+                                        checkedCriteriaIds = if (item.criteriaId in checkedCriteriaIds) {
+                                            checkedCriteriaIds - item.criteriaId
+                                        } else {
+                                            checkedCriteriaIds + item.criteriaId
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            right.forEach { item ->
+                                ChecklistItem(
+                                    item = item,
+                                    checked = item.criteriaId in checkedCriteriaIds,
+                                    onToggle = {
+                                        checkedCriteriaIds = if (item.criteriaId in checkedCriteriaIds) {
+                                            checkedCriteriaIds - item.criteriaId
+                                        } else {
+                                            checkedCriteriaIds + item.criteriaId
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -265,5 +340,37 @@ fun CreateCardScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ChecklistItem(
+    item: Criteria,
+    checked: Boolean,
+    onToggle: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() }
+        ) { onToggle() }
+    ) {
+        Icon(
+            painter = painterResource(
+                id = if (checked) R.drawable.ic_check_box
+                else R.drawable.ic_check_box_empty
+            ),
+            contentDescription = null,
+            tint = Blue,
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            text = item.name,
+            style = Typography.bodyLarge,
+            color = Dark,
+            modifier = Modifier.padding(top = 2.dp)
+        )
     }
 }

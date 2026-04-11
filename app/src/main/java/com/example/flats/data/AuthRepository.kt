@@ -1,5 +1,6 @@
 package com.example.flats.data
 
+import com.example.flats.data.model.Criteria
 import com.example.flats.data.model.User
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -8,6 +9,15 @@ import io.github.jan.supabase.postgrest.postgrest
 object AuthRepository {
 
     private val client = SupabaseClient.client
+
+    private val defaultCriteria = listOf(
+        "Нет шума",
+        "Есть парковка",
+        "Хорошие соседи",
+        "Удобное местоположение",
+        "Есть балкон",
+        "Есть лифт"
+    )
 
     suspend fun signUp(
         email: String,
@@ -31,6 +41,11 @@ object AuthRepository {
         )
 
         client.postgrest.from("user").insert(newUser)
+
+        val criteria = defaultCriteria.map { name ->
+            Criteria(userId = uid, name = name)
+        }
+        client.postgrest.from("criteria").insert(criteria)
     }
 
     suspend fun signIn(email: String, password: String) {
