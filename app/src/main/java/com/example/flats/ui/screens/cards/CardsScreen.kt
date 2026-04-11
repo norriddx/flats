@@ -126,7 +126,7 @@ fun CardsScreen(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(18.dp),
-                    contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 24.dp, bottom = 100.dp)
+                    contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 24.dp, bottom = 120.dp)
                 ) {
                     items(cards, key = { it.cardId }) { card ->
                         CardItem(
@@ -159,7 +159,6 @@ fun CardsScreen(
             },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .windowInsetsPadding(WindowInsets.navigationBars)
         )
     }
 }
