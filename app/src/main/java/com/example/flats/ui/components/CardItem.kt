@@ -42,8 +42,8 @@ fun CardItem(
             .shadow(
                 elevation = 4.dp,
                 shape = RoundedCornerShape(10.dp),
-                spotColor = Color(0x0C000000),
-                ambientColor = Color(0x0C000000)
+                spotColor = Color(0x40000000),
+                ambientColor = Color(0x20000000)
             )
             .background(White, RoundedCornerShape(10.dp))
             .padding(16.dp),

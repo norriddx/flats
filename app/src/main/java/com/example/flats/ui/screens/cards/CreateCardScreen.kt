@@ -1,6 +1,7 @@
 package com.example.flats.ui.screens.cards
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,10 +34,13 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.flats.R
+import com.example.flats.data.CardRepository
+import com.example.flats.data.model.Card
 import com.example.flats.ui.components.Button
 import com.example.flats.ui.components.PeriodDropdown
 import com.example.flats.ui.components.PhotoPicker
@@ -46,6 +51,7 @@ import com.example.flats.ui.components.TopBarAction
 import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Typography
+import kotlinx.coroutines.launch
 
 private fun Modifier.topShadow(
     height: Dp = 12.dp,
@@ -77,6 +83,42 @@ fun CreateCardScreen(
     var price by remember { mutableStateOf("") }
     var pricePeriod by remember { mutableStateOf("month") }
     var utilitiesIncluded by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    fun saveCard(isDraft: Boolean) {
+        if (isSaving) return
+        isSaving = true
+
+        scope.launch {
+            try {
+                val imageUrl = images.firstOrNull()?.let { uri ->
+                    CardRepository.uploadImage(context, uri)
+                }
+
+                val card = Card(
+                    userId = CardRepository.currentUserId(),
+                    name = name.ifBlank { "Без названия" },
+                    address = address.ifBlank { null },
+                    price = price.toDoubleOrNull(),
+                    square = square.toDoubleOrNull(),
+                    pricePeriod = if (price.isNotBlank()) pricePeriod else null,
+                    utilitiesIncluded = utilitiesIncluded,
+                    isDraft = isDraft,
+                    imageUrl = imageUrl
+                )
+
+                CardRepository.insertCard(card)
+                onBack()
+            } catch (e: Exception) {
+                Toast.makeText(context, e.message ?: "Ошибка сохранения", Toast.LENGTH_SHORT).show()
+            } finally {
+                isSaving = false
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -108,7 +150,7 @@ fun CreateCardScreen(
                     onDelete = { uri -> images = images - uri }
                 )
 
-                // Название
+                // name
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Название", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -118,7 +160,7 @@ fun CreateCardScreen(
                     placeholder = "Например, «Квартира 1»"
                 )
 
-                // Адрес
+                // address
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Адрес", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -128,7 +170,7 @@ fun CreateCardScreen(
                     placeholder = "Город, улица, дом, квартира"
                 )
 
-                // Площадь
+                // square
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Площадь", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -138,7 +180,7 @@ fun CreateCardScreen(
                     placeholder = "30 кв. м."
                 )
 
-                // Стоимость
+                // cost
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -157,7 +199,7 @@ fun CreateCardScreen(
                     placeholder = "Например, «20 000»"
                 )
 
-                // Включены ЖКУ
+                // utilities included
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -183,7 +225,7 @@ fun CreateCardScreen(
                 Spacer(modifier = Modifier.height(100.dp))
             }
 
-            // Фиксированная панель сохранения
+            // buttons
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -196,12 +238,12 @@ fun CreateCardScreen(
                 ) {
                     SecondaryButton(
                         text = "Сохранить как черновик",
-                        onClick = { /* TODO */ },
+                        onClick = { saveCard(isDraft = true) },
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         text = "Сохранить",
-                        onClick = { /* TODO */ },
+                        onClick = { saveCard(isDraft = false) },
                         modifier = Modifier.weight(1f)
                     )
                 }
