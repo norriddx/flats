@@ -103,6 +103,14 @@ object CardRepository {
             .decodeList<Criteria>()
     }
 
+    suspend fun toggleFavourite(cardId: Long, isFavourite: Boolean) {
+        client.postgrest.from("card").update({
+            set("is_favourite", !isFavourite)
+        }) {
+            filter { eq("card_id", cardId) }
+        }
+    }
+
     fun currentUserId(): String {
         return client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")

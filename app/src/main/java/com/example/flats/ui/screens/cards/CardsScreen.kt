@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +46,7 @@ import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.Typography
+import kotlinx.coroutines.launch
 
 @Composable
 fun CardsScreen(
@@ -55,6 +57,7 @@ fun CardsScreen(
     var searchQuery by remember { mutableStateOf("") }
     var cards by remember { mutableStateOf<List<Card>>(emptyList()) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         try {
@@ -131,7 +134,16 @@ fun CardsScreen(
                     items(cards, key = { it.cardId }) { card ->
                         CardItem(
                             card = card,
-                            onFavouriteClick = { /* TODO */ },
+                            onFavouriteClick = {
+                                scope.launch {
+                                    try {
+                                        CardRepository.toggleFavourite(card.cardId, card.isFavourite)
+                                        cards = cards.map {
+                                            if (it.cardId == card.cardId) it.copy(isFavourite = !it.isFavourite) else it
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(2.dp)
