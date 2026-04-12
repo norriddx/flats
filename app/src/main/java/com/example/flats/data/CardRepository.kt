@@ -32,16 +32,44 @@ object CardRepository {
         val userId = client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")
 
-        val bitmap = if (android.os.Build.VERSION.SDK_INT >= 28) {
-            android.graphics.ImageDecoder.decodeBitmap(
-                android.graphics.ImageDecoder.createSource(context.contentResolver, uri)
-            ) { decoder, _, _ -> decoder.setTargetSampleSize(2) }
-        } else {
-            android.provider.MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+        val options = android.graphics.BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        context.contentResolver.openInputStream(uri)?.use {
+            android.graphics.BitmapFactory.decodeStream(it, null, options)
+        }
+
+        val maxSide = 800
+        val sampleSize = maxOf(1, maxOf(options.outWidth, options.outHeight) / maxSide)
+
+        val decodeOptions = android.graphics.BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+        }
+        var bitmap = context.contentResolver.openInputStream(uri)?.use {
+            android.graphics.BitmapFactory.decodeStream(it, null, decodeOptions)
+        } ?: throw Exception("Не удалось прочитать файл")
+
+        // применяем EXIF ориентацию
+        val rotation = context.contentResolver.openInputStream(uri)?.use { input ->
+            val exif = androidx.exifinterface.media.ExifInterface(input)
+            when (exif.getAttributeInt(
+                androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,
+                androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL
+            )) {
+                androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+        } ?: 0f
+
+        if (rotation != 0f) {
+            val matrix = android.graphics.Matrix().apply { postRotate(rotation) }
+            bitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         }
 
         val stream = java.io.ByteArrayOutputStream()
-        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, stream)
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 60, stream)
         val bytes = stream.toByteArray()
 
         val fileName = "$userId/${UUID.randomUUID()}.jpg"
