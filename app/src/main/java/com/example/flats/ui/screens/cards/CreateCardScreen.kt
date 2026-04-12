@@ -93,6 +93,7 @@ fun CreateCardScreen(
     var description by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
     var scoreValues by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
+    var contact by remember { mutableStateOf("") }
 
     var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var checkedCriteriaIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
@@ -126,6 +127,7 @@ fun CreateCardScreen(
                     pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                     utilitiesIncluded = utilitiesIncluded,
                     isDraft = isDraft,
+                    contact = contact.ifBlank { null },
                     imageUrl = imageUrl
                 )
 
@@ -354,6 +356,16 @@ fun CreateCardScreen(
                         }
                     }
                 }
+
+                // contacts
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(text = "Контакты", style = Typography.headlineSmall, color = Dark)
+                Spacer(modifier = Modifier.height(16.dp))
+                TextField(
+                    value = contact,
+                    onValueChange = { contact = it },
+                    placeholder = "Номер или ссылка на владельца"
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
