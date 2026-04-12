@@ -78,6 +78,24 @@ private fun Modifier.topShadow(
     }
 )
 
+private fun Modifier.bottomShadow(
+    height: Dp = 12.dp,
+    color: Color = Color(0x0A000000)
+): Modifier = this.then(
+    Modifier.drawBehind {
+        val shadowPx = height.toPx()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(color, Color.Transparent),
+                startY = size.height,
+                endY = size.height + shadowPx
+            ),
+            topLeft = Offset(0f, size.height),
+            size = size.copy(height = shadowPx)
+        )
+    }
+)
+
 @Composable
 fun CreateCardScreen(
     onBack: () -> Unit,
@@ -96,6 +114,7 @@ fun CreateCardScreen(
     var contact by remember { mutableStateOf("") }
 
     var shouldNavigateBack by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(shouldNavigateBack) {
         if (shouldNavigateBack) onBack()
@@ -182,13 +201,14 @@ fun CreateCardScreen(
             TopBar(
                 title = "Создать просмотр",
                 onBack = onBack,
-                actions = listOf(TopBarAction(R.drawable.ic_bin) { onDelete() })
+                actions = listOf(TopBarAction(R.drawable.ic_bin) { onDelete() }),
+                modifier = if (scrollState.value > 0) Modifier.bottomShadow() else Modifier
             )
 
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
                     .padding(horizontal = 20.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
