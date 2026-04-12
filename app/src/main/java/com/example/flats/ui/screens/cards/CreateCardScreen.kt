@@ -95,6 +95,12 @@ fun CreateCardScreen(
     var scoreValues by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
     var contact by remember { mutableStateOf("") }
 
+    var shouldNavigateBack by remember { mutableStateOf(false) }
+
+    LaunchedEffect(shouldNavigateBack) {
+        if (shouldNavigateBack) onBack()
+    }
+
     var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var checkedCriteriaIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
@@ -124,10 +130,10 @@ fun CreateCardScreen(
                     price = price.toDoubleOrNull(),
                     square = square.toDoubleOrNull(),
                     description = description.ifBlank { null },
+                    contact = contact.ifBlank { null },
                     pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                     utilitiesIncluded = utilitiesIncluded,
                     isDraft = isDraft,
-                    contact = contact.ifBlank { null },
                     imageUrl = imageUrl
                 )
 
@@ -151,11 +157,11 @@ fun CreateCardScreen(
 
                 CardRepository.insertCardCriteriaScores(checklistScores + sliderScores)
 
-                onBack()
+                shouldNavigateBack = true
+            } catch (e: kotlinx.coroutines.CancellationException) {
             } catch (e: Exception) {
-                Toast.makeText(context, e.message ?: "Ошибка сохранения", Toast.LENGTH_SHORT).show()
-            } finally {
                 isSaving = false
+                Toast.makeText(context, e.message ?: "Ошибка сохранения", Toast.LENGTH_SHORT).show()
             }
         }
     }
