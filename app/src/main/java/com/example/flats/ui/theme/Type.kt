@@ -50,7 +50,8 @@ val Typography = Typography(
         fontWeight    = FontWeight.Normal,
         fontSize      = 16.sp,
         lineHeight    = 20.sp,
-        letterSpacing = 0.01.em
+        letterSpacing = 0.01.em,
+        fontFeatureSettings = "lnum"
     ),
     // small text
     bodyMedium = TextStyle(
@@ -58,7 +59,8 @@ val Typography = Typography(
         fontWeight    = FontWeight.Medium,
         fontSize      = 14.sp,
         lineHeight    = 16.sp,
-        letterSpacing = 0.01.em
+        letterSpacing = 0.01.em,
+        fontFeatureSettings = "lnum"
     ),
     // button
     labelLarge = TextStyle(
@@ -66,7 +68,8 @@ val Typography = Typography(
         fontWeight    = FontWeight.Bold,
         fontSize      = 16.sp,
         lineHeight    = 19.sp,
-        letterSpacing = 0.01.em
+        letterSpacing = 0.01.em,
+        fontFeatureSettings = "lnum"
     )
 )
 

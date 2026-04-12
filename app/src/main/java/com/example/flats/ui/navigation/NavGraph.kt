@@ -1,5 +1,8 @@
 package com.example.flats.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
@@ -18,7 +21,14 @@ fun NavGraph(navController: NavHostController) {
         if (SupabaseClient.client.auth.currentSessionOrNull() != null) Routes.CARDS else Routes.AUTH
     }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        enterTransition = { fadeIn(animationSpec = tween(150)) },
+        exitTransition = { fadeOut(animationSpec = tween(150)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(150)) },
+        popExitTransition = { fadeOut(animationSpec = tween(150)) }
+    )  {
         composable(Routes.AUTH) {
             AuthScreen(
                 onAuthSuccess = {

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.crossfade
 import com.example.flats.R
 import com.example.flats.data.model.Card
 import com.example.flats.ui.theme.*
@@ -55,7 +56,11 @@ fun CardItem(
         Box(modifier = Modifier.fillMaxWidth()) {
             if (card.imageUrl != null) {
                 AsyncImage(
-                    model = card.imageUrl,
+                    model = coil3.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(card.imageUrl)
+                        .size(800, 240)
+                        .crossfade(true)
+                        .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

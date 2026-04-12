@@ -1,6 +1,11 @@
 package com.example.flats.ui.screens.cards
 
 import android.widget.Toast
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,18 +25,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -52,6 +59,7 @@ import com.example.flats.ui.components.TextField
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
 import com.example.flats.ui.theme.Gray
+import com.example.flats.ui.theme.LightBlue
 import com.example.flats.ui.theme.Typography
 
 private fun Modifier.bottomShadow(
@@ -73,6 +81,40 @@ private fun Modifier.bottomShadow(
 )
 
 @Composable
+private fun ShimmerCardItem(brush: Brush) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(2.dp)
+            .background(Color.White, RoundedCornerShape(10.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(brush)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .height(20.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(brush)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.4f)
+                .height(16.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(brush)
+        )
+    }
+}
+
+@Composable
 fun CardsScreen(
     onNavigateToComparison: () -> Unit,
     onNavigateToCreateCard: () -> Unit,
@@ -80,20 +122,23 @@ fun CardsScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var cards by remember { mutableStateOf<List<Card>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
     var toggleCardId by remember { mutableStateOf<Long?>(null) }
-    var refreshTrigger by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
     val listState = rememberLazyListState()
-    val isScrolled = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
+    val isScrolled by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
+        }
+    }
 
-    LaunchedEffect(refreshTrigger) {
+    LaunchedEffect(Unit) {
+        isLoading = true
         try {
             cards = CardRepository.getCards()
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Toast.makeText(context, e.message ?: "Ошибка загрузки", Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {
         }
+        isLoading = false
     }
 
     LaunchedEffect(toggleCardId) {
@@ -130,66 +175,98 @@ fun CardsScreen(
                     TopBarAction(R.drawable.ic_archive) { },
                     TopBarAction(R.drawable.ic_favourite) { }
                 ),
-                modifier = if (isScrolled && cards.isNotEmpty()) Modifier.bottomShadow() else Modifier
+                modifier = Modifier
             )
 
-            if (cards.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp)
-                        .padding(bottom = 80.dp)
-                ) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = "Найти",
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_search),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = Gray
-                            )
-                        },
-                        trailingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_filter),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = Gray
-                            )
-                        }
+            when {
+                isLoading -> {
+                    val transition = rememberInfiniteTransition(label = "shimmer")
+                    val translateAnim by transition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 1000f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(800),
+                            repeatMode = RepeatMode.Restart
+                        ),
+                        label = "shimmer"
                     )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
+                    val shimmerBrush = Brush.linearGradient(
+                        colors = listOf(LightBlue, Color(0xFFD8E0EE), LightBlue),
+                        start = Offset(translateAnim - 200f, 0f),
+                        end = Offset(translateAnim, 0f)
+                    )
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 120.dp)
                     ) {
-                        Text(
-                            text = "Пусто :(\nЧтобы добавить первую\n квартиру, нажми +",
-                            style = Typography.bodyLarge,
-                            color = Gray,
-                            textAlign = TextAlign.Center
-                        )
+                        items(3) {
+                            ShimmerCardItem(brush = shimmerBrush)
+                        }
                     }
                 }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
-                    contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 120.dp)
-                ) {
-                    item {
+
+                cards.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 80.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(16.dp))
                         TextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
                             placeholder = "Найти",
-                            modifier = Modifier.padding(horizontal = 2.dp),
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_search),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = Gray
+                                )
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_filter),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                    tint = Gray
+                                )
+                            }
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Пусто :(\nЧтобы добавить первую\n квартиру, нажми +",
+                                style = Typography.bodyLarge,
+                                color = Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                else -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (isScrolled) Modifier.bottomShadow() else Modifier
+                            )
+                            .background(Color.White)
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 16.dp, bottom = 16.dp)
+                    ) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = "Найти",
                             leadingIcon = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_search),
@@ -208,14 +285,21 @@ fun CardsScreen(
                             }
                         )
                     }
-                    items(cards, key = { it.cardId }) { card ->
-                        CardItem(
-                            card = card,
-                            onFavouriteClick = { toggleCardId = card.cardId },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(2.dp)
-                        )
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 120.dp)
+                    ) {
+                        items(cards, key = { it.cardId }) { card ->
+                            CardItem(
+                                card = card,
+                                onFavouriteClick = { toggleCardId = card.cardId },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(2.dp)
+                            )
+                        }
                     }
                 }
             }
