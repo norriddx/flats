@@ -53,15 +53,32 @@ fun CardItem(
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            AsyncImage(
-                model = card.imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(10.dp))
-            )
+            if (card.imageUrl != null) {
+                AsyncImage(
+                    model = card.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .background(LightBlue, RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_house),
+                        contentDescription = null,
+                        tint = LightGray,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
 
             Box(
                 modifier = Modifier
