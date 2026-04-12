@@ -76,28 +76,34 @@ fun Button(
 fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val backgroundColor = if (isPressed) LightBlue else White
+    val backgroundColor = if (isPressed && enabled) LightBlue else White
+    val borderColor = if (enabled) Blue else Gray
+    val textColor = if (enabled) Blue else Gray
 
     OutlinedButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(59.dp),
+        enabled = enabled,
         shape = RoundedCornerShape(10.dp),
         interactionSource = interactionSource,
-        border = BorderStroke(2.dp, Blue),
+        border = BorderStroke(2.dp, borderColor),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = backgroundColor,
-            contentColor   = Blue
+            contentColor = textColor,
+            disabledContainerColor = White,
+            disabledContentColor = Gray
         )
     ) {
         Text(
-            text  = text,
+            text = text,
             style = Typography.labelLarge,
             textAlign = TextAlign.Center
         )

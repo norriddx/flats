@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -245,8 +247,13 @@ fun CreateCardScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = square,
-                    onValueChange = { square = it },
-                    placeholder = "30 кв. м."
+                    onValueChange = { input ->
+                        if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            square = input
+                        }
+                    },
+                    placeholder = "30 кв. м.",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 // cost
@@ -264,8 +271,13 @@ fun CreateCardScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = price,
-                    onValueChange = { price = it },
-                    placeholder = "Например, «20 000»"
+                    onValueChange = { input ->
+                        if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                            price = input
+                        }
+                    },
+                    placeholder = "Например, «20 000»",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 // utilities included
@@ -412,11 +424,13 @@ fun CreateCardScreen(
                     SecondaryButton(
                         text = "Сохранить как черновик",
                         onClick = { saveCard(isDraft = true) },
+                        enabled = name.isNotBlank() && !isSaving,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         text = "Сохранить",
                         onClick = { saveCard(isDraft = false) },
+                        enabled = name.isNotBlank() && !isSaving,
                         modifier = Modifier.weight(1f)
                     )
                 }
