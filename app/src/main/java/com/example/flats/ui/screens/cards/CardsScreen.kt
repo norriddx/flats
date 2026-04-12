@@ -26,9 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,8 +53,6 @@ import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.Typography
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 
 private fun Modifier.bottomShadow(
     height: Dp = 12.dp,
@@ -82,19 +80,38 @@ fun CardsScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var cards by remember { mutableStateOf<List<Card>>(emptyList()) }
+    var toggleCardId by remember { mutableStateOf<Long?>(null) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val isScrolled = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshTrigger) {
         try {
             cards = CardRepository.getCards()
-        } catch (_: CancellationException) {
-            throw CancellationException()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             Toast.makeText(context, e.message ?: "Ошибка загрузки", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    LaunchedEffect(toggleCardId) {
+        val cardId = toggleCardId ?: return@LaunchedEffect
+        val card = cards.find { it.cardId == cardId } ?: return@LaunchedEffect
+        cards = cards.map {
+            if (it.cardId == cardId) it.copy(isFavourite = !it.isFavourite) else it
+        }
+        try {
+            CardRepository.toggleFavourite(cardId, card.isFavourite)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            cards = cards.map {
+                if (it.cardId == cardId) it.copy(isFavourite = card.isFavourite) else it
+            }
+        }
+        toggleCardId = null
     }
 
     Box(
@@ -194,21 +211,7 @@ fun CardsScreen(
                     items(cards, key = { it.cardId }) { card ->
                         CardItem(
                             card = card,
-                            onFavouriteClick = {
-                                val currentCards = cards
-                                cards = currentCards.map {
-                                    if (it.cardId == card.cardId) it.copy(isFavourite = !it.isFavourite) else it
-                                }
-                                scope.launch {
-                                    try {
-                                        CardRepository.toggleFavourite(card.cardId, card.isFavourite)
-                                    } catch (_: CancellationException) {
-                                        // ignore
-                                    } catch (_: Exception) {
-                                        cards = currentCards
-                                    }
-                                }
-                            },
+                            onFavouriteClick = { toggleCardId = card.cardId },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(2.dp)

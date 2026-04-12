@@ -110,6 +110,8 @@ fun CreateCardScreen(
     LaunchedEffect(Unit) {
         try {
             criteria = CardRepository.getCriteria()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (_: Exception) {}
     }
 
@@ -151,7 +153,7 @@ fun CreateCardScreen(
                     CardCriteriaScore(
                         cardId = savedCard.cardId,
                         criteriaId = criteriaId,
-                        value = value.toDouble()
+                        value = (value + 1).toDouble()
                     )
                 }
 
