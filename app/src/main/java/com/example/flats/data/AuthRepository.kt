@@ -10,13 +10,18 @@ object AuthRepository {
 
     private val client = SupabaseClient.client
 
+    private data class DefaultCriterion(val name: String, val type: String)
+
     private val defaultCriteria = listOf(
-        "Нет шума",
-        "Есть парковка",
-        "Хорошие соседи",
-        "Удобное местоположение",
-        "Есть балкон",
-        "Есть лифт"
+        DefaultCriterion("Нет шума", "checklist"),
+        DefaultCriterion("Есть парковка", "checklist"),
+        DefaultCriterion("Хорошие соседи", "checklist"),
+        DefaultCriterion("Удобное местоположение", "checklist"),
+        DefaultCriterion("Есть балкон", "checklist"),
+        DefaultCriterion("Есть лифт", "checklist"),
+        DefaultCriterion("Интерьер", "score"),
+        DefaultCriterion("Инфраструктура", "score"),
+        DefaultCriterion("Цена", "score")
     )
 
     suspend fun signUp(
@@ -42,8 +47,8 @@ object AuthRepository {
 
         client.postgrest.from("user").insert(newUser)
 
-        val criteria = defaultCriteria.map { name ->
-            Criteria(userId = uid, name = name)
+        val criteria = defaultCriteria.map { def ->
+            Criteria(userId = uid, name = def.name, type = def.type)
         }
         client.postgrest.from("criteria").insert(criteria)
     }

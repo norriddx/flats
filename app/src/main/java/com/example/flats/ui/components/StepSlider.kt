@@ -1,6 +1,7 @@
 package com.example.flats.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +15,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.LightGray
@@ -26,22 +25,30 @@ private val Steps = 5
 
 @Composable
 fun StepSlider(
-    value: Int, // 0..4
+    value: Int,
     onValueChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    fun resolveStep(x: Float, width: Int): Int {
+        return ((x / width) * (Steps - 1)).toInt().coerceIn(0, Steps - 1)
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(DotSize)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
-                    val step = (offset.x / size.width * (Steps - 1)).toInt().coerceIn(0, Steps - 1)
-                    onValueChange(step)
+                    onValueChange(resolveStep(offset.x, size.width))
+                }
+            }
+            .pointerInput(Unit) {
+                detectDragGestures { change, _ ->
+                    change.consume()
+                    onValueChange(resolveStep(change.position.x, size.width))
                 }
             }
     ) {
-        // lines
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -64,7 +71,6 @@ fun StepSlider(
                 }
         )
 
-        // dots
         Layout(
             content = {
                 repeat(Steps) { index ->
@@ -91,10 +97,3 @@ fun StepSlider(
         }
     }
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//fun StepSliderFullPreview() {
-//    StepSlider(value = 4, onValueChange = {})
-//}
-

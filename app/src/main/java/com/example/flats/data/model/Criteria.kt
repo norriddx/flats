@@ -9,5 +9,6 @@ data class Criteria(
     @SerialName("user_id") val userId: String = "",
     val name: String = "",
     val weight: Double = 1.0,
-    @SerialName("is_active") val isActive: Boolean = true
+    @SerialName("is_active") val isActive: Boolean = true,
+    val type: String = "score"
 )

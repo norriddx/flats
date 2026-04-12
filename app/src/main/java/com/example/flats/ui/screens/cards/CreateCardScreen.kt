@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -50,6 +51,7 @@ import com.example.flats.ui.components.Button
 import com.example.flats.ui.components.PeriodDropdown
 import com.example.flats.ui.components.PhotoPicker
 import com.example.flats.ui.components.SecondaryButton
+import com.example.flats.ui.components.StepSlider
 import com.example.flats.ui.components.TextField
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
@@ -90,6 +92,7 @@ fun CreateCardScreen(
     var utilitiesIncluded by remember { mutableStateOf(false) }
     var description by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
+    var scoreValues by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
 
     var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var checkedCriteriaIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
@@ -128,14 +131,23 @@ fun CreateCardScreen(
 
                 val savedCard = CardRepository.insertCard(card)
 
-                val scores = checkedCriteriaIds.map { criteriaId ->
+                val checklistScores = checkedCriteriaIds.map { criteriaId ->
                     CardCriteriaScore(
                         cardId = savedCard.cardId,
                         criteriaId = criteriaId,
                         value = 1.0
                     )
                 }
-                CardRepository.insertCardCriteriaScores(scores)
+
+                val sliderScores = scoreValues.map { (criteriaId, value) ->
+                    CardCriteriaScore(
+                        cardId = savedCard.cardId,
+                        criteriaId = criteriaId,
+                        value = value.toDouble()
+                    )
+                }
+
+                CardRepository.insertCardCriteriaScores(checklistScores + sliderScores)
 
                 onBack()
             } catch (e: Exception) {
@@ -238,7 +250,7 @@ fun CreateCardScreen(
                             else R.drawable.ic_check_box_empty
                         ),
                         contentDescription = null,
-                        tint = Color.Unspecified,
+                        tint = Blue,
                         modifier = Modifier
                             .size(24.dp)
                             .clickable(
@@ -262,13 +274,14 @@ fun CreateCardScreen(
                 )
 
                 // check list
-                if (criteria.isNotEmpty()) {
+                val checklistCriteria = criteria.filter { it.type == "checklist" }
+                if (checklistCriteria.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(text = "Чек-лист", style = Typography.headlineSmall, color = Dark)
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val left = criteria.filterIndexed { i, _ -> i % 2 == 0 }
-                    val right = criteria.filterIndexed { i, _ -> i % 2 == 1 }
+                    val left = checklistCriteria.filterIndexed { i, _ -> i % 2 == 0 }
+                    val right = checklistCriteria.filterIndexed { i, _ -> i % 2 == 1 }
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -307,6 +320,35 @@ fun CreateCardScreen(
                                             checkedCriteriaIds + item.criteriaId
                                         }
                                     }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // criteria
+                val scoreCriteria = criteria.filter { it.type == "score" }
+                if (scoreCriteria.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Критерии оценки", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        scoreCriteria.forEach { item ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = item.name,
+                                    style = Typography.bodyLarge,
+                                    color = Dark,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                StepSlider(
+                                    value = scoreValues[item.criteriaId] ?: 0,
+                                    onValueChange = { scoreValues = scoreValues + (item.criteriaId to it) },
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }
