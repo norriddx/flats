@@ -9,12 +9,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -42,6 +44,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -112,6 +115,7 @@ private fun ShimmerCardItem(brush: Brush) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CardsScreen(
     onNavigateToComparison: () -> Unit,
@@ -126,6 +130,12 @@ fun CardsScreen(
         derivedStateOf {
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
         }
+    }
+    val focusManager = LocalFocusManager.current
+    val imeVisible = WindowInsets.isImeVisible
+
+    LaunchedEffect(imeVisible) {
+        if (!imeVisible) focusManager.clearFocus()
     }
 
     LaunchedEffect(Unit) {
