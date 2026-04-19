@@ -87,6 +87,7 @@ object CardRepository {
             .from("card")
             .select {
                 filter { eq("user_id", userId) }
+                order("card_id", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
             }
             .decodeList<Card>()
     }

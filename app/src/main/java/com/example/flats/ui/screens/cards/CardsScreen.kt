@@ -1,6 +1,5 @@
 package com.example.flats.ui.screens.cards
 
-import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -43,7 +42,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -121,10 +119,8 @@ fun CardsScreen(
     onLogout: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var cards by remember { mutableStateOf<List<Card>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    var cards by remember { mutableStateOf<List<Card>?>(null) }
     var toggleCardId by remember { mutableStateOf<Long?>(null) }
-    val context = LocalContext.current
     val listState = rememberLazyListState()
     val isScrolled by remember {
         derivedStateOf {
@@ -133,28 +129,24 @@ fun CardsScreen(
     }
 
     LaunchedEffect(Unit) {
-        isLoading = true
         try {
             cards = CardRepository.getCards()
         } catch (_: Exception) {
+            cards = emptyList()
         }
-        isLoading = false
     }
 
     LaunchedEffect(toggleCardId) {
         val cardId = toggleCardId ?: return@LaunchedEffect
-        val card = cards.find { it.cardId == cardId } ?: return@LaunchedEffect
-        cards = cards.map {
+        val currentCards = cards ?: return@LaunchedEffect
+        val card = currentCards.find { it.cardId == cardId } ?: return@LaunchedEffect
+        cards = currentCards.map {
             if (it.cardId == cardId) it.copy(isFavourite = !it.isFavourite) else it
         }
         try {
             CardRepository.toggleFavourite(cardId, card.isFavourite)
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            cards = cards.map {
-                if (it.cardId == cardId) it.copy(isFavourite = card.isFavourite) else it
-            }
+        } catch (_: Exception) {
+            cards = currentCards
         }
         toggleCardId = null
     }
@@ -174,12 +166,11 @@ fun CardsScreen(
                 actions = listOf(
                     TopBarAction(R.drawable.ic_archive) { },
                     TopBarAction(R.drawable.ic_favourite) { }
-                ),
-                modifier = Modifier
+                )
             )
 
             when {
-                isLoading -> {
+                cards == null -> {
                     val transition = rememberInfiniteTransition(label = "shimmer")
                     val translateAnim by transition.animateFloat(
                         initialValue = 0f,
@@ -206,7 +197,7 @@ fun CardsScreen(
                     }
                 }
 
-                cards.isEmpty() -> {
+                cards!!.isEmpty() -> {
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -285,13 +276,18 @@ fun CardsScreen(
                             }
                         )
                     }
+                    val filteredCards = if (searchQuery.isBlank()) {
+                        cards!!
+                    } else {
+                        cards!!.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    }
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(18.dp),
                         contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 120.dp)
                     ) {
-                        items(cards, key = { it.cardId }) { card ->
+                        items(filteredCards, key = { it.cardId }) { card ->
                             CardItem(
                                 card = card,
                                 onFavouriteClick = { toggleCardId = card.cardId },
