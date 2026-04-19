@@ -6,6 +6,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +58,8 @@ import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.components.CardItem
 import com.example.flats.ui.components.FAB
+import com.example.flats.ui.components.FilterSheet
+import com.example.flats.ui.components.FilterState
 import com.example.flats.ui.components.TextField
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
@@ -125,6 +129,9 @@ fun CardsScreen(
     var searchQuery by remember { mutableStateOf("") }
     var cards by remember { mutableStateOf<List<Card>?>(null) }
     var toggleCardId by remember { mutableStateOf<Long?>(null) }
+    var filter by remember { mutableStateOf(FilterState()) }
+    var appliedFilter by remember { mutableStateOf(FilterState()) }
+    var showFilterSheet by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val isScrolled by remember {
         derivedStateOf {
@@ -160,6 +167,15 @@ fun CardsScreen(
         }
         toggleCardId = null
     }
+
+    LaunchedEffect(appliedFilter, searchQuery) {
+        listState.scrollToItem(0)
+    }
+
+    val priceMin = cards?.mapNotNull { it.price }?.minOrNull()
+    val priceMax = cards?.mapNotNull { it.price }?.maxOrNull()
+    val squareMin = cards?.mapNotNull { it.square }?.minOrNull()
+    val squareMax = cards?.mapNotNull { it.square }?.maxOrNull()
 
     Box(
         modifier = Modifier
@@ -280,16 +296,46 @@ fun CardsScreen(
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_filter),
                                     contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clickable(
+                                            indication = null,
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        ) {
+                                            filter = appliedFilter
+                                            showFilterSheet = true
+                                        },
                                     tint = Gray
                                 )
                             }
                         )
                     }
-                    val filteredCards = if (searchQuery.isBlank()) {
-                        cards!!
-                    } else {
-                        cards!!.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    val filteredCards = cards!!.filter { card ->
+                        val matchesSearch = searchQuery.isBlank() ||
+                                card.name.contains(searchQuery, ignoreCase = true)
+
+                        val priceFilterActive = appliedFilter.priceStart > 0f || appliedFilter.priceEnd < 1f
+                        val squareFilterActive = appliedFilter.squareStart > 0f || appliedFilter.squareEnd < 1f
+
+                        val matchesPrice = if (!priceFilterActive || priceMin == null || priceMax == null || priceMin >= priceMax) {
+                            true
+                        } else if (card.price == null) {
+                            false
+                        } else {
+                            val norm = ((card.price - priceMin) / (priceMax - priceMin)).toFloat()
+                            norm in appliedFilter.priceStart..appliedFilter.priceEnd
+                        }
+
+                        val matchesSquare = if (!squareFilterActive || squareMin == null || squareMax == null || squareMin >= squareMax) {
+                            true
+                        } else if (card.square == null) {
+                            false
+                        } else {
+                            val norm = ((card.square - squareMin) / (squareMax - squareMin)).toFloat()
+                            norm in appliedFilter.squareStart..appliedFilter.squareEnd
+                        }
+
+                        matchesSearch && matchesPrice && matchesSquare
                     }
                     LazyColumn(
                         state = listState,
@@ -330,5 +376,21 @@ fun CardsScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
         )
+
+        if (showFilterSheet) {
+            FilterSheet(
+                filter = filter,
+                priceMin = priceMin,
+                priceMax = priceMax,
+                squareMin = squareMin,
+                squareMax = squareMax,
+                onFilterChange = { filter = it },
+                onApply = {
+                    appliedFilter = filter
+                    showFilterSheet = false
+                },
+                onDismiss = { showFilterSheet = false }
+            )
+        }
     }
 }
