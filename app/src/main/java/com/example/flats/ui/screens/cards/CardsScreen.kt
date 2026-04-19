@@ -144,6 +144,7 @@ fun CardsScreen(
     }
     val focusManager = LocalFocusManager.current
     val imeVisible = WindowInsets.isImeVisible
+    var scoreCriteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
 
     LaunchedEffect(imeVisible) {
         if (!imeVisible) focusManager.clearFocus()
@@ -159,7 +160,9 @@ fun CardsScreen(
 
     LaunchedEffect(Unit) {
         try {
-            checklistCriteria = CardRepository.getCriteria().filter { it.type == "checklist" }
+            val all = CardRepository.getCriteria()
+            checklistCriteria = all.filter { it.type == "checklist" }
+            scoreCriteria = all.filter { it.type == "score" }
         } catch (_: Exception) {}
     }
 
@@ -361,7 +364,16 @@ fun CardsScreen(
                             appliedFilter.checkedCriteriaIds.all { it in cardCriteriaIds }
                         }
 
-                        matchesSearch && matchesPrice && matchesSquare && matchesChecklist
+                        val matchesScores = if (appliedFilter.scoreValues.isEmpty()) {
+                            true
+                        } else {
+                            appliedFilter.scoreValues.all { (criteriaId, minValue) ->
+                                val score = allScores.find { it.cardId == card.cardId && it.criteriaId == criteriaId }
+                                score != null && score.value >= (minValue + 1).toDouble()
+                            }
+                        }
+
+                        matchesSearch && matchesPrice && matchesSquare && matchesChecklist && matchesScores
                     }
                     LazyColumn(
                         state = listState,
@@ -411,6 +423,7 @@ fun CardsScreen(
                 squareMin = squareMin,
                 squareMax = squareMax,
                 checklistCriteria = checklistCriteria,
+                scoreCriteria = scoreCriteria,
                 onFilterChange = { filter = it },
                 onApply = {
                     appliedFilter = filter

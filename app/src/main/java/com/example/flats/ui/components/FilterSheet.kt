@@ -3,6 +3,7 @@ package com.example.flats.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,12 +42,14 @@ data class FilterState(
     val priceEnd: Float = 1f,
     val squareStart: Float = 0f,
     val squareEnd: Float = 1f,
-    val checkedCriteriaIds: Set<Long> = emptySet()
+    val checkedCriteriaIds: Set<Long> = emptySet(),
+    val scoreValues: Map<Long, Int> = emptyMap()
 ) {
     val isActive: Boolean
         get() = priceStart > 0f || priceEnd < 1f ||
                 squareStart > 0f || squareEnd < 1f ||
-                checkedCriteriaIds.isNotEmpty()
+                checkedCriteriaIds.isNotEmpty() ||
+                scoreValues.isNotEmpty()
 }
 
 private fun Modifier.topShadow(
@@ -123,6 +126,7 @@ fun FilterSheet(
     squareMin: Double?,
     squareMax: Double?,
     checklistCriteria: List<Criteria>,
+    scoreCriteria: List<Criteria>,
     onFilterChange: (FilterState) -> Unit,
     onApply: () -> Unit,
     onDismiss: () -> Unit
@@ -247,6 +251,41 @@ fun FilterSheet(
                                     onFilterChange(filter.copy(checkedCriteriaIds = newSet))
                                 }
                             )
+                        }
+                    }
+                }
+
+                // criteria
+                if (scoreCriteria.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Критерии оценки", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        scoreCriteria.forEach { item ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = item.name,
+                                    style = Typography.bodyLarge,
+                                    color = Dark,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                StepSlider(
+                                    value = filter.scoreValues[item.criteriaId] ?: 0,
+                                    onValueChange = { v ->
+                                        val newMap = if (v == 0) {
+                                            filter.scoreValues - item.criteriaId
+                                        } else {
+                                            filter.scoreValues + (item.criteriaId to v)
+                                        }
+                                        onFilterChange(filter.copy(scoreValues = newMap))
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
