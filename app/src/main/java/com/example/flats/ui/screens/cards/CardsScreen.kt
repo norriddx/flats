@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import com.example.flats.R
 import com.example.flats.data.CardRepository
 import com.example.flats.data.model.Card
+import com.example.flats.data.model.CardCriteriaScore
+import com.example.flats.data.model.Criteria
 import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.components.CardItem
@@ -132,6 +134,8 @@ fun CardsScreen(
     var filter by remember { mutableStateOf(FilterState()) }
     var appliedFilter by remember { mutableStateOf(FilterState()) }
     var showFilterSheet by remember { mutableStateOf(false) }
+    var checklistCriteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
+    var allScores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
     val listState = rememberLazyListState()
     val isScrolled by remember {
         derivedStateOf {
@@ -151,6 +155,18 @@ fun CardsScreen(
         } catch (_: Exception) {
             cards = emptyList()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            checklistCriteria = CardRepository.getCriteria().filter { it.type == "checklist" }
+        } catch (_: Exception) {}
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            allScores = CardRepository.getAllScores()
+        } catch (_: Exception) {}
     }
 
     LaunchedEffect(toggleCardId) {
@@ -335,7 +351,17 @@ fun CardsScreen(
                             norm in appliedFilter.squareStart..appliedFilter.squareEnd
                         }
 
-                        matchesSearch && matchesPrice && matchesSquare
+                        val matchesChecklist = if (appliedFilter.checkedCriteriaIds.isEmpty()) {
+                            true
+                        } else {
+                            val cardCriteriaIds = allScores
+                                .filter { it.cardId == card.cardId && it.value == 1.0 }
+                                .map { it.criteriaId }
+                                .toSet()
+                            appliedFilter.checkedCriteriaIds.all { it in cardCriteriaIds }
+                        }
+
+                        matchesSearch && matchesPrice && matchesSquare && matchesChecklist
                     }
                     LazyColumn(
                         state = listState,
@@ -384,6 +410,7 @@ fun CardsScreen(
                 priceMax = priceMax,
                 squareMin = squareMin,
                 squareMax = squareMax,
+                checklistCriteria = checklistCriteria,
                 onFilterChange = { filter = it },
                 onApply = {
                     appliedFilter = filter

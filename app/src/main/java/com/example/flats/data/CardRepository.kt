@@ -49,7 +49,6 @@ object CardRepository {
             android.graphics.BitmapFactory.decodeStream(it, null, decodeOptions)
         } ?: throw Exception("Не удалось прочитать файл")
 
-        // применяем EXIF ориентацию
         val rotation = context.contentResolver.openInputStream(uri)?.use { input ->
             val exif = androidx.exifinterface.media.ExifInterface(input)
             when (exif.getAttributeInt(
@@ -102,6 +101,13 @@ object CardRepository {
                 filter { eq("user_id", userId) }
             }
             .decodeList<Criteria>()
+    }
+
+    suspend fun getAllScores(): List<CardCriteriaScore> {
+        return client.postgrest
+            .from("card_criteria_score")
+            .select()
+            .decodeList<CardCriteriaScore>()
     }
 
     suspend fun toggleFavourite(cardId: Long, isFavourite: Boolean) {
