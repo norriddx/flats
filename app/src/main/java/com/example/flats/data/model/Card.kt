@@ -14,7 +14,7 @@ data class Card(
     val isFavourite: Boolean = false,
     val isDraft: Boolean = false,
     val utilitiesIncluded: Boolean = false,
-    val imageUrl: String? = null,
+    val imageUrls: List<String> = emptyList(),
     val pricePeriod: String? = null,
     val contact: String? = null
 )

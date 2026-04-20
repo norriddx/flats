@@ -19,7 +19,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.flats"
+        // TODO: вернуть на "com.example.flats" перед релизом
+        applicationId = "com.example.flats2"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

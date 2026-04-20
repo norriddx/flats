@@ -91,6 +91,21 @@ object CardRepository {
             .decodeList<Card>()
     }
 
+    suspend fun getCardById(cardId: Long): Card {
+        return client.postgrest
+            .from("card")
+            .select {
+                filter { eq("card_id", cardId) }
+            }
+            .decodeSingle<Card>()
+    }
+
+    suspend fun deleteCard(cardId: Long) {
+        client.postgrest.from("card").delete {
+            filter { eq("card_id", cardId) }
+        }
+    }
+
     suspend fun getCriteria(): List<Criteria> {
         val userId = client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")

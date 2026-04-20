@@ -41,7 +41,7 @@ fun CardItemCompact(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         AsyncImage(
-            model = card.imageUrl,
+            model = card.imageUrls.firstOrNull(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier

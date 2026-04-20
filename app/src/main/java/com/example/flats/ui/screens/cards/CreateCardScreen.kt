@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -43,7 +42,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.flats.R
 import com.example.flats.data.CardRepository
 import com.example.flats.data.model.Card
@@ -142,7 +140,7 @@ fun CreateCardScreen(
 
         scope.launch {
             try {
-                val imageUrl = images.firstOrNull()?.let { uri ->
+                val imageUrls = images.map { uri ->
                     CardRepository.uploadImage(context, uri)
                 }
 
@@ -157,7 +155,7 @@ fun CreateCardScreen(
                     pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                     utilitiesIncluded = utilitiesIncluded,
                     isDraft = isDraft,
-                    imageUrl = imageUrl
+                    imageUrls = imageUrls
                 )
 
                 val savedCard = CardRepository.insertCard(card)
@@ -221,7 +219,6 @@ fun CreateCardScreen(
                     onDelete = { uri -> images = images - uri }
                 )
 
-                // name
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Название", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -231,7 +228,6 @@ fun CreateCardScreen(
                     placeholder = "Например, «Квартира 1»"
                 )
 
-                // address
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Адрес", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -241,7 +237,6 @@ fun CreateCardScreen(
                     placeholder = "Город, улица, дом, квартира"
                 )
 
-                // square
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Площадь", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -256,7 +251,6 @@ fun CreateCardScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
-                // cost
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -280,7 +274,6 @@ fun CreateCardScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
-                // utilities included
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -303,7 +296,6 @@ fun CreateCardScreen(
                     Text(text = "Включены ЖКУ", style = Typography.bodyLarge, color = Dark)
                 }
 
-                // description
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Описание", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -315,7 +307,6 @@ fun CreateCardScreen(
                     height = 100.dp
                 )
 
-                // check list
                 val checklistCriteria = criteria.filter { it.type == "checklist" }
                 if (checklistCriteria.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -368,7 +359,6 @@ fun CreateCardScreen(
                     }
                 }
 
-                // criteria
                 val scoreCriteria = criteria.filter { it.type == "score" }
                 if (scoreCriteria.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -397,7 +387,6 @@ fun CreateCardScreen(
                     }
                 }
 
-                // contacts
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Контакты", style = Typography.headlineSmall, color = Dark)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -410,7 +399,6 @@ fun CreateCardScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // buttons
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

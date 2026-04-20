@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -31,6 +30,7 @@ import com.example.flats.ui.theme.*
 fun CardItem(
     card: Card,
     onFavouriteClick: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val periodLabel = when (card.pricePeriod) {
@@ -39,6 +39,8 @@ fun CardItem(
         "year"  -> "/год"
         else    -> ""
     }
+
+    val firstImage = card.imageUrls.firstOrNull()
 
     Column(
         modifier = modifier
@@ -50,14 +52,18 @@ fun CardItem(
                 ambientColor = Color(0x20000000)
             )
             .background(White, RoundedCornerShape(10.dp))
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onClick() }
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            if (card.imageUrl != null) {
+            if (firstImage != null) {
                 AsyncImage(
                     model = coil3.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                        .data(card.imageUrl)
+                        .data(firstImage)
                         .size(800, 240)
                         .crossfade(true)
                         .build(),
@@ -191,23 +197,3 @@ fun CardItem(
         }
     }
 }
-
-//@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
-//@Composable
-//fun CardItemPreview() {
-//    FlatsTheme {
-//        CardItem(
-//            card = Card(
-//                name = "Квартира №1",
-//                address = "Нижний Новгород, ул. Белинского, 49",
-//                price = 30000.0,
-//                square = 28.0,
-//                isFavourite = false,
-//                isDraft = true,
-//                pricePeriod = "month",
-//                utilitiesIncluded = true
-//            ),
-//            onFavouriteClick = {}
-//        )
-//    }
-//}
