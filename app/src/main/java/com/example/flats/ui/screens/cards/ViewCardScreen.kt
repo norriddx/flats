@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -190,11 +191,15 @@ fun ViewCardScreen(
                         SecondaryButton(
                             text = "В архив",
                             onClick = { /* TODO архив */ },
+                            contentPadding = PaddingValues(horizontal = 12.dp),
+                            maxLines = 1,
                             modifier = Modifier.weight(1f)
                         )
                         Button(
                             text = "Редактировать",
                             onClick = onEdit,
+                            contentPadding = PaddingValues(horizontal = 12.dp),
+                            maxLines = 1,
                             modifier = Modifier.weight(1f)
                         )
                     }
