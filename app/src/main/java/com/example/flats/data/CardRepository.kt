@@ -8,14 +8,38 @@ import com.example.flats.data.model.Criteria
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.delay
 import java.util.UUID
 
 object CardRepository {
 
     private val client = SupabaseClient.client
 
-    suspend fun insertCard(card: Card): Card {
-        return client.postgrest
+    private suspend fun <T> withRetry(
+        attempts: Int = 3,
+        initialDelayMs: Long = 1000,
+        block: suspend () -> T
+    ): T {
+        var lastError: Exception? = null
+        var delayMs = initialDelayMs
+        repeat(attempts) { attempt ->
+            try {
+                return block()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                lastError = e
+                if (attempt < attempts - 1) {
+                    delay(delayMs)
+                    delayMs *= 2
+                }
+            }
+        }
+        throw lastError ?: Exception("Неизвестная ошибка")
+    }
+
+    suspend fun insertCard(card: Card): Card = withRetry {
+        client.postgrest
             .from("card")
             .insert(card) {
                 select()
@@ -25,7 +49,9 @@ object CardRepository {
 
     suspend fun insertCardCriteriaScores(scores: List<CardCriteriaScore>) {
         if (scores.isEmpty()) return
-        client.postgrest.from("card_criteria_score").insert(scores)
+        withRetry {
+            client.postgrest.from("card_criteria_score").insert(scores)
+        }
     }
 
     suspend fun uploadImage(context: Context, uri: Uri): String {
@@ -73,16 +99,18 @@ object CardRepository {
 
         val fileName = "$userId/${UUID.randomUUID()}.jpg"
 
-        client.storage.from("card-images").upload(fileName, bytes)
+        withRetry {
+            client.storage.from("card-images").upload(fileName, bytes)
+        }
 
         return client.storage.from("card-images").publicUrl(fileName)
     }
 
-    suspend fun getCards(): List<Card> {
+    suspend fun getCards(): List<Card> = withRetry {
         val userId = client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")
 
-        return client.postgrest
+        client.postgrest
             .from("card")
             .select {
                 filter { eq("user_id", userId) }
@@ -91,8 +119,8 @@ object CardRepository {
             .decodeList<Card>()
     }
 
-    suspend fun getCardById(cardId: Long): Card {
-        return client.postgrest
+    suspend fun getCardById(cardId: Long): Card = withRetry {
+        client.postgrest
             .from("card")
             .select {
                 filter { eq("card_id", cardId) }
@@ -101,16 +129,18 @@ object CardRepository {
     }
 
     suspend fun deleteCard(cardId: Long) {
-        client.postgrest.from("card").delete {
-            filter { eq("card_id", cardId) }
+        withRetry {
+            client.postgrest.from("card").delete {
+                filter { eq("card_id", cardId) }
+            }
         }
     }
 
-    suspend fun getCriteria(): List<Criteria> {
+    suspend fun getCriteria(): List<Criteria> = withRetry {
         val userId = client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")
 
-        return client.postgrest
+        client.postgrest
             .from("criteria")
             .select {
                 filter { eq("user_id", userId) }
@@ -118,18 +148,20 @@ object CardRepository {
             .decodeList<Criteria>()
     }
 
-    suspend fun getAllScores(): List<CardCriteriaScore> {
-        return client.postgrest
+    suspend fun getAllScores(): List<CardCriteriaScore> = withRetry {
+        client.postgrest
             .from("card_criteria_score")
             .select()
             .decodeList<CardCriteriaScore>()
     }
 
     suspend fun toggleFavourite(cardId: Long, isFavourite: Boolean) {
-        client.postgrest.from("card").update({
-            set("is_favourite", !isFavourite)
-        }) {
-            filter { eq("card_id", cardId) }
+        withRetry {
+            client.postgrest.from("card").update({
+                set("is_favourite", !isFavourite)
+            }) {
+                filter { eq("card_id", cardId) }
+            }
         }
     }
 
