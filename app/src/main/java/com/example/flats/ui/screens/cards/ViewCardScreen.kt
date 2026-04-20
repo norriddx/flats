@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -45,15 +46,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.flats.R
 import com.example.flats.data.CardRepository
 import com.example.flats.data.model.Card
+import com.example.flats.data.model.CardCriteriaScore
+import com.example.flats.data.model.Criteria
 import com.example.flats.ui.components.Button
 import com.example.flats.ui.components.PageIndicator
 import com.example.flats.ui.components.SecondaryButton
+import com.example.flats.ui.components.StepSlider
+import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.LightBlue
@@ -131,6 +138,8 @@ fun ViewCardScreen(
     var card by remember { mutableStateOf<Card?>(null) }
     var isDeleting by remember { mutableStateOf(false) }
     var shouldNavigateBack by remember { mutableStateOf(false) }
+    var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
+    var scores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -144,6 +153,14 @@ fun ViewCardScreen(
             Toast.makeText(context, e.message ?: "Ошибка загрузки", Toast.LENGTH_SHORT).show()
             shouldNavigateBack = true
         }
+    }
+
+    LaunchedEffect(cardId) {
+        try {
+            criteria = CardRepository.getCriteria()
+            scores = CardRepository.getAllScores().filter { it.cardId == cardId }
+        } catch (_: kotlinx.coroutines.CancellationException) {
+        } catch (_: Exception) {}
     }
 
     LaunchedEffect(shouldNavigateBack) {
@@ -220,11 +237,216 @@ fun ViewCardScreen(
                             Spacer(modifier = Modifier.height(32.dp))
                         }
 
+                        // name
                         Text(
                             text = currentCard.name,
                             style = Typography.headlineLarge,
                             color = Dark
                         )
+
+                        // address
+                        if (currentCard.address != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_location),
+                                    contentDescription = null,
+                                    tint = Gray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = currentCard.address,
+                                    style = Typography.bodyMedium,
+                                    color = Gray
+                                )
+                            }
+                        }
+
+                        // desc
+                        if (currentCard.description != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = currentCard.description,
+                                style = Typography.bodyLarge,
+                                color = Dark
+                            )
+                        }
+
+                        // square
+                        if (currentCard.square != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "${currentCard.square.toInt()} кв. м.",
+                                style = Typography.bodyLarge,
+                                color = Dark
+                            )
+                        }
+
+                        // price
+                        if (currentCard.price != null) {
+                            val periodLabel = when (currentCard.pricePeriod) {
+                                "day"   -> "/день"
+                                "month" -> "/месяц"
+                                "year"  -> "/год"
+                                else    -> ""
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(Typography.bodyLarge.toSpanStyle().copy(color = Dark)) {
+                                            append("${currentCard.price.toInt()}")
+                                        }
+                                        if (periodLabel.isNotEmpty()) {
+                                            append(" ")
+                                            withStyle(Typography.bodyMedium.toSpanStyle().copy(color = Gray)) {
+                                                append(periodLabel)
+                                            }
+                                        }
+                                    }
+                                )
+                                if (currentCard.utilitiesIncluded) {
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .background(LightBlue, RoundedCornerShape(4.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "+ ЖКУ",
+                                            style = Typography.bodyMedium,
+                                            color = Gray
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // check list
+                        val checklistCriteria = criteria.filter { it.type == "checklist" }
+                        val checkedIds = scores
+                            .filter { it.value == 1.0 }
+                            .map { it.criteriaId }
+                            .toSet()
+
+                        if (checklistCriteria.isNotEmpty()) {
+                            Text(
+                                text = "Чек-лист",
+                                style = Typography.headlineSmall,
+                                color = Dark
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            val left = checklistCriteria.filterIndexed { i, _ -> i % 2 == 0 }
+                            val right = checklistCriteria.filterIndexed { i, _ -> i % 2 == 1 }
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    left.forEach { item ->
+                                        ChecklistItemReadOnly(
+                                            item = item,
+                                            checked = item.criteriaId in checkedIds
+                                        )
+                                    }
+                                }
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    right.forEach { item ->
+                                        ChecklistItemReadOnly(
+                                            item = item,
+                                            checked = item.criteriaId in checkedIds
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+
+                        // criteria
+                        val scoreCriteria = criteria.filter { it.type == "score" }
+
+                        if (scoreCriteria.isNotEmpty()) {
+                            Text(
+                                text = "Критерии оценки",
+                                style = Typography.headlineSmall,
+                                color = Dark
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                scoreCriteria.forEach { item ->
+                                    val score = scores.find { it.criteriaId == item.criteriaId }
+                                    val value = (score?.value?.toInt() ?: 1) - 1
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = item.name,
+                                            style = Typography.bodyLarge,
+                                            color = Dark,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        StepSlider(
+                                            value = value,
+                                            onValueChange = {},
+                                            enabled = false,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
+
+                        // contacts
+                        if (!currentCard.contact.isNullOrBlank()) {
+                            Text(
+                                text = "Контакты",
+                                style = Typography.headlineSmall,
+                                color = Dark
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = currentCard.contact,
+                                    style = Typography.bodyLarge,
+                                    color = Dark
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_copy),
+                                    contentDescription = null,
+                                    tint = Dark,
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clickable(
+                                            indication = null,
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        ) {
+                                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                                                    as android.content.ClipboardManager
+                                            clipboard.setPrimaryClip(
+                                                android.content.ClipData.newPlainText("contact", currentCard.contact)
+                                            )
+                                            Toast.makeText(context, "Скопировано", Toast.LENGTH_SHORT).show()
+                                        }
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(24.dp))
                     }
@@ -313,5 +535,32 @@ fun ViewCardScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ChecklistItemReadOnly(
+    item: Criteria,
+    checked: Boolean
+) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            painter = painterResource(
+                id = if (checked) R.drawable.ic_check_box
+                else R.drawable.ic_check_box_empty
+            ),
+            contentDescription = null,
+            tint = Blue,
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            text = item.name,
+            style = Typography.bodyLarge,
+            color = Dark,
+            modifier = Modifier.padding(top = 2.dp)
+        )
     }
 }

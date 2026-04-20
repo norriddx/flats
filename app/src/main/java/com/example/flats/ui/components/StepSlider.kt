@@ -27,7 +27,8 @@ private val Steps = 5
 fun StepSlider(
     value: Int,
     onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     fun resolveStep(x: Float, width: Int): Int {
         return ((x / width) * (Steps - 1)).toInt().coerceIn(0, Steps - 1)
@@ -37,17 +38,24 @@ fun StepSlider(
         modifier = modifier
             .fillMaxWidth()
             .height(DotSize)
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    onValueChange(resolveStep(offset.x, size.width))
+            .then(
+                if (enabled) {
+                    Modifier
+                        .pointerInput(Unit) {
+                            detectTapGestures { offset ->
+                                onValueChange(resolveStep(offset.x, size.width))
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, _ ->
+                                change.consume()
+                                onValueChange(resolveStep(change.position.x, size.width))
+                            }
+                        }
+                } else {
+                    Modifier
                 }
-            }
-            .pointerInput(Unit) {
-                detectDragGestures { change, _ ->
-                    change.consume()
-                    onValueChange(resolveStep(change.position.x, size.width))
-                }
-            }
+            )
     ) {
         Box(
             modifier = Modifier
