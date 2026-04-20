@@ -6,12 +6,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.flats.data.SupabaseClient
 import com.example.flats.ui.screens.auth.AuthScreen
 import com.example.flats.ui.screens.cards.CardsScreen
 import com.example.flats.ui.screens.cards.CreateCardScreen
+import com.example.flats.ui.screens.cards.ViewCardScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import io.github.jan.supabase.auth.auth
 
@@ -43,6 +46,9 @@ fun NavGraph(navController: NavHostController) {
             CardsScreen(
                 onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
                 onNavigateToCreateCard = { navController.navigate(Routes.CREATE_CARD) },
+                onNavigateToViewCard = { cardId ->
+                    navController.navigate(Routes.viewCard(cardId))
+                },
                 onLogout = {
                     navController.navigate(Routes.AUTH) {
                         popUpTo(0) { inclusive = true }
@@ -55,6 +61,18 @@ fun NavGraph(navController: NavHostController) {
             CreateCardScreen(
                 onBack = { navController.popBackStack() },
                 onDelete = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.VIEW_CARD,
+            arguments = listOf(navArgument("cardId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val cardId = backStackEntry.arguments?.getLong("cardId") ?: 0L
+            ViewCardScreen(
+                cardId = cardId,
+                onBack = { navController.popBackStack() },
+                onEdit = { /* TODO Step 6: редактирование */ }
             )
         }
 

@@ -126,6 +126,7 @@ private fun ShimmerCardItem(brush: Brush) {
 fun CardsScreen(
     onNavigateToComparison: () -> Unit,
     onNavigateToCreateCard: () -> Unit,
+    onNavigateToViewCard: (Long) -> Unit,
     onLogout: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -385,6 +386,7 @@ fun CardsScreen(
                             CardItem(
                                 card = card,
                                 onFavouriteClick = { toggleCardId = card.cardId },
+                                onClick = { onNavigateToViewCard(card.cardId) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(2.dp)

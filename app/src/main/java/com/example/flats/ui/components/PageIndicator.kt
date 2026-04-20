@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.LightGray
@@ -19,7 +18,9 @@ import com.example.flats.ui.theme.LightGray
 fun PageIndicator(
     count: Int,
     selected: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    activeColor: Color = Blue,
+    inactiveColor: Color = LightGray
 ) {
     Row(
         modifier = modifier,
@@ -31,16 +32,10 @@ fun PageIndicator(
                 modifier = Modifier
                     .size(8.dp)
                     .background(
-                        color = if (index == selected) Blue else LightGray,
+                        color = if (index == selected) activeColor else inactiveColor,
                         shape = CircleShape
                     )
             )
         }
     }
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//fun PageIndicatorPreview() {
-//    PageIndicator(count = 3, selected = 0)
-//}
