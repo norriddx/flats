@@ -87,7 +87,29 @@ private fun Modifier.topShadow(
 )
 
 @Composable
-private fun ShimmerContent() {
+private fun BackButton(onBack: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .padding(top = 68.dp, start = 20.dp)
+            .size(44.dp)
+            .background(Color.White.copy(alpha = 0.5f), CircleShape)
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onBack() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_arrow),
+            contentDescription = null,
+            tint = Dark,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
+private fun ShimmerContent(onBack: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
         initialValue = 0f,
@@ -109,8 +131,16 @@ private fun ShimmerContent() {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(320.dp)
-                .background(shimmerBrush)
-        )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(shimmerBrush)
+            )
+            Box(modifier = Modifier.align(Alignment.TopStart)) {
+                BackButton(onBack)
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -215,6 +245,43 @@ fun ViewCardScreen(
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }
+                        }
+
+                        Box(modifier = Modifier.align(Alignment.TopStart)) {
+                            BackButton(onBack)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 68.dp, end = 20.dp)
+                                .size(44.dp)
+                                .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) {
+                                    if (isDeleting) return@clickable
+                                    isDeleting = true
+                                    scope.launch {
+                                        try {
+                                            CardRepository.deleteCard(cardId)
+                                            shouldNavigateBack = true
+                                        } catch (e: kotlinx.coroutines.CancellationException) {
+                                        } catch (e: Exception) {
+                                            isDeleting = false
+                                            Toast.makeText(context, e.message ?: "Ошибка удаления", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_bin),
+                                contentDescription = null,
+                                tint = Dark,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
 
@@ -478,62 +545,7 @@ fun ViewCardScreen(
                 }
             }
         } else {
-            ShimmerContent()
-        }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 68.dp, start = 20.dp)
-                .size(44.dp)
-                .background(Color.White.copy(alpha = 0.5f), CircleShape)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { onBack() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_arrow),
-                contentDescription = null,
-                tint = Dark,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        if (currentCard != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 68.dp, end = 20.dp)
-                    .size(44.dp)
-                    .background(Color.White.copy(alpha = 0.5f), CircleShape)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) {
-                        if (isDeleting) return@clickable
-                        isDeleting = true
-                        scope.launch {
-                            try {
-                                CardRepository.deleteCard(cardId)
-                                shouldNavigateBack = true
-                            } catch (e: kotlinx.coroutines.CancellationException) {
-                            } catch (e: Exception) {
-                                isDeleting = false
-                                Toast.makeText(context, e.message ?: "Ошибка удаления", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_bin),
-                    contentDescription = null,
-                    tint = Dark,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            ShimmerContent(onBack = onBack)
         }
     }
 }
