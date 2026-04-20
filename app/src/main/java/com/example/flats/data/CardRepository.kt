@@ -39,7 +39,7 @@ object CardRepository {
             android.graphics.BitmapFactory.decodeStream(it, null, options)
         }
 
-        val maxSide = 800
+        val maxSide = 1600
         val sampleSize = maxOf(1, maxOf(options.outWidth, options.outHeight) / maxSide)
 
         val decodeOptions = android.graphics.BitmapFactory.Options().apply {
@@ -68,7 +68,7 @@ object CardRepository {
         }
 
         val stream = java.io.ByteArrayOutputStream()
-        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 60, stream)
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, stream)
         val bytes = stream.toByteArray()
 
         val fileName = "$userId/${UUID.randomUUID()}.jpg"
