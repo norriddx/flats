@@ -1,6 +1,11 @@
 package com.example.flats.ui.screens.cards
 
 import android.widget.Toast
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,6 +24,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -31,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -71,6 +78,49 @@ private fun Modifier.topShadow(
         )
     }
 )
+
+@Composable
+private fun ShimmerContent() {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(LightBlue, Color(0xFFD8E0EE), LightBlue),
+        start = Offset(translateAnim - 200f, 0f),
+        end = Offset(translateAnim, 0f)
+    )
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(320.dp)
+                .background(shimmerBrush)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(28.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerBrush)
+            )
+        }
+    }
+}
 
 @Composable
 fun ViewCardScreen(
@@ -205,6 +255,8 @@ fun ViewCardScreen(
                     }
                 }
             }
+        } else {
+            ShimmerContent()
         }
 
         Box(
@@ -227,37 +279,39 @@ fun ViewCardScreen(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 68.dp, end = 20.dp)
-                .size(44.dp)
-                .background(Color.White.copy(alpha = 0.5f), CircleShape)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    if (isDeleting) return@clickable
-                    isDeleting = true
-                    scope.launch {
-                        try {
-                            CardRepository.deleteCard(cardId)
-                            shouldNavigateBack = true
-                        } catch (e: kotlinx.coroutines.CancellationException) {
-                        } catch (e: Exception) {
-                            isDeleting = false
-                            Toast.makeText(context, e.message ?: "Ошибка удаления", Toast.LENGTH_SHORT).show()
+        if (currentCard != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 68.dp, end = 20.dp)
+                    .size(44.dp)
+                    .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        if (isDeleting) return@clickable
+                        isDeleting = true
+                        scope.launch {
+                            try {
+                                CardRepository.deleteCard(cardId)
+                                shouldNavigateBack = true
+                            } catch (e: kotlinx.coroutines.CancellationException) {
+                            } catch (e: Exception) {
+                                isDeleting = false
+                                Toast.makeText(context, e.message ?: "Ошибка удаления", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    }
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_bin),
-                contentDescription = null,
-                tint = Dark,
-                modifier = Modifier.size(24.dp)
-            )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_bin),
+                    contentDescription = null,
+                    tint = Dark,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
