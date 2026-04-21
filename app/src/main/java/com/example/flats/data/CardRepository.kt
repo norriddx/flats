@@ -113,7 +113,26 @@ object CardRepository {
         client.postgrest
             .from("card")
             .select {
-                filter { eq("user_id", userId) }
+                filter {
+                    eq("user_id", userId)
+                    eq("is_archived", false)
+                }
+                order("card_id", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+            }
+            .decodeList<Card>()
+    }
+
+    suspend fun getArchivedCards(): List<Card> = withRetry {
+        val userId = client.auth.currentUserOrNull()?.id
+            ?: throw Exception("Пользователь не авторизован")
+
+        client.postgrest
+            .from("card")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    eq("is_archived", true)
+                }
                 order("card_id", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
             }
             .decodeList<Card>()
@@ -132,6 +151,29 @@ object CardRepository {
         withRetry {
             client.postgrest.from("card").delete {
                 filter { eq("card_id", cardId) }
+            }
+        }
+    }
+
+    suspend fun archiveCard(cardId: Long) {
+        withRetry {
+            client.postgrest.from("card").update({
+                set("is_archived", true)
+            }) {
+                filter { eq("card_id", cardId) }
+            }
+        }
+    }
+
+    suspend fun clearArchive() {
+        withRetry {
+            val userId = client.auth.currentUserOrNull()?.id
+                ?: throw Exception("Пользователь не авторизован")
+            client.postgrest.from("card").delete {
+                filter {
+                    eq("user_id", userId)
+                    eq("is_archived", true)
+                }
             }
         }
     }
@@ -177,6 +219,7 @@ object CardRepository {
                     set("square", card.square)
                     set("description", card.description)
                     set("is_favourite", card.isFavourite)
+                    set("is_archived", card.isArchived)
                     set("is_draft", card.isDraft)
                     set("utilities_included", card.utilitiesIncluded)
                     set("image_urls", card.imageUrls)

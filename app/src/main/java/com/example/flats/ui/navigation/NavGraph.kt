@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.flats.data.SupabaseClient
 import com.example.flats.ui.screens.auth.AuthScreen
+import com.example.flats.ui.screens.cards.ArchiveScreen
 import com.example.flats.ui.screens.cards.CardsScreen
 import com.example.flats.ui.screens.cards.CreateCardScreen
 import com.example.flats.ui.screens.cards.FavouritesScreen
@@ -51,6 +52,7 @@ fun NavGraph(navController: NavHostController) {
                     navController.navigate(Routes.viewCard(cardId))
                 },
                 onNavigateToFavourites = { navController.navigate(Routes.FAVOURITES) },
+                onNavigateToArchive = { navController.navigate(Routes.ARCHIVE) },
                 onLogout = {
                     navController.navigate(Routes.AUTH) {
                         popUpTo(0) { inclusive = true }
@@ -93,6 +95,16 @@ fun NavGraph(navController: NavHostController) {
 
         composable(Routes.FAVOURITES) {
             FavouritesScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
+                onNavigateToViewCard = { cardId ->
+                    navController.navigate(Routes.viewCard(cardId))
+                }
+            )
+        }
+
+        composable(Routes.ARCHIVE) {
+            ArchiveScreen(
                 onBack = { navController.popBackStack() },
                 onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
                 onNavigateToViewCard = { cardId ->

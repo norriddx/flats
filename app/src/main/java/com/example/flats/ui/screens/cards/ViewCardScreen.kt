@@ -167,6 +167,7 @@ fun ViewCardScreen(
 ) {
     var card by remember { mutableStateOf<Card?>(null) }
     var isDeleting by remember { mutableStateOf(false) }
+    var isArchiving by remember { mutableStateOf(false) }
     var shouldNavigateBack by remember { mutableStateOf(false) }
     var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var scores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
@@ -526,7 +527,21 @@ fun ViewCardScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         SecondaryButton(
                             text = "В архив",
-                            onClick = { /* TODO архив */ },
+                            onClick = {
+                                if (isArchiving) return@SecondaryButton
+                                isArchiving = true
+                                scope.launch {
+                                    try {
+                                        CardRepository.archiveCard(cardId)
+                                        shouldNavigateBack = true
+                                    } catch (e: kotlinx.coroutines.CancellationException) {
+                                    } catch (e: Exception) {
+                                        isArchiving = false
+                                        Toast.makeText(context, e.message ?: "Ошибка архивации", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            enabled = !isArchiving,
                             contentPadding = PaddingValues(horizontal = 12.dp),
                             maxLines = 1,
                             modifier = Modifier.weight(1f)

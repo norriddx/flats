@@ -12,6 +12,7 @@ data class Card(
     val square: Double? = null,
     val description: String? = null,
     val isFavourite: Boolean = false,
+    val isArchived: Boolean = false,
     val isDraft: Boolean = false,
     val utilitiesIncluded: Boolean = false,
     val imageUrls: List<String> = emptyList(),
