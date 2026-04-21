@@ -10,7 +10,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -28,17 +27,17 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.flats.R
 import com.example.flats.ui.theme.Dark
-import com.example.flats.ui.theme.LightBlue
 import com.example.flats.ui.theme.Gray
+import com.example.flats.ui.theme.LightBlue
 
 private val CellSize = 84.dp
 private val CellShape = RoundedCornerShape(10.dp)
 
 @Composable
 fun PhotoPicker(
-    images: List<Uri>,
+    images: List<Any>,
     onAdd: (List<Uri>) -> Unit,
-    onDelete: (Uri) -> Unit,
+    onDelete: (Any) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val launcher = rememberLauncherForActivityResult(
@@ -49,14 +48,14 @@ fun PhotoPicker(
         modifier = modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        images.forEach { uri ->
+        images.forEach { image ->
             Box(
                 modifier = Modifier
                     .size(CellSize)
                     .clip(CellShape)
             ) {
                 AsyncImage(
-                    model = uri,
+                    model = image,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.matchParentSize()
@@ -69,7 +68,7 @@ fun PhotoPicker(
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        ) { onDelete(uri) },
+                        ) { onDelete(image) },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

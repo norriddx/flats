@@ -59,6 +59,19 @@ fun NavGraph(navController: NavHostController) {
 
         composable(Routes.CREATE_CARD) {
             CreateCardScreen(
+                cardId = null,
+                onBack = { navController.popBackStack() },
+                onDelete = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.EDIT_CARD,
+            arguments = listOf(navArgument("cardId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val cardId = backStackEntry.arguments?.getLong("cardId") ?: 0L
+            CreateCardScreen(
+                cardId = cardId,
                 onBack = { navController.popBackStack() },
                 onDelete = { navController.popBackStack() }
             )
@@ -72,7 +85,7 @@ fun NavGraph(navController: NavHostController) {
             ViewCardScreen(
                 cardId = cardId,
                 onBack = { navController.popBackStack() },
-                onEdit = { /* TODO Step 6: редактирование */ }
+                onEdit = { navController.navigate(Routes.editCard(cardId)) }
             )
         }
 

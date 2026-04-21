@@ -165,6 +165,39 @@ object CardRepository {
         }
     }
 
+    suspend fun updateCard(card: Card): Card = withRetry {
+        client.postgrest
+            .from("card")
+            .update(
+                {
+                    set("user_id", card.userId)
+                    set("name", card.name)
+                    set("address", card.address)
+                    set("price", card.price)
+                    set("square", card.square)
+                    set("description", card.description)
+                    set("is_favourite", card.isFavourite)
+                    set("is_draft", card.isDraft)
+                    set("utilities_included", card.utilitiesIncluded)
+                    set("image_urls", card.imageUrls)
+                    set("price_period", card.pricePeriod)
+                    set("contact", card.contact)
+                }
+            ) {
+                select()
+                filter { eq("card_id", card.cardId) }
+            }
+            .decodeSingle<Card>()
+    }
+
+    suspend fun deleteCardCriteriaScores(cardId: Long) {
+        withRetry {
+            client.postgrest.from("card_criteria_score").delete {
+                filter { eq("card_id", cardId) }
+            }
+        }
+    }
+
     fun currentUserId(): String {
         return client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")

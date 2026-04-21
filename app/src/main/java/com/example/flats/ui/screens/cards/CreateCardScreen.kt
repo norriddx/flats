@@ -2,6 +2,11 @@ package com.example.flats.ui.screens.cards
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -14,12 +19,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -33,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -57,6 +64,7 @@ import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
 import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.Dark
+import com.example.flats.ui.theme.LightBlue
 import com.example.flats.ui.theme.Typography
 import kotlinx.coroutines.launch
 
@@ -98,10 +106,13 @@ private fun Modifier.bottomShadow(
 
 @Composable
 fun CreateCardScreen(
+    cardId: Long?,
     onBack: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var images by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    val isEditMode = cardId != null
+
+    var images by remember { mutableStateOf<List<Any>>(emptyList()) }
     var name by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var square by remember { mutableStateOf("") }
@@ -112,6 +123,7 @@ fun CreateCardScreen(
     var isSaving by remember { mutableStateOf(false) }
     var scoreValues by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
     var contact by remember { mutableStateOf("") }
+    var isLoaded by remember { mutableStateOf(!isEditMode) }
 
     var shouldNavigateBack by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
@@ -134,31 +146,85 @@ fun CreateCardScreen(
         } catch (_: Exception) {}
     }
 
+    LaunchedEffect(cardId) {
+        if (cardId == null) return@LaunchedEffect
+        try {
+            val loadedCard = CardRepository.getCardById(cardId)
+            val loadedScores = CardRepository.getAllScores().filter { it.cardId == cardId }
+
+            images = loadedCard.imageUrls
+            name = loadedCard.name
+            address = loadedCard.address ?: ""
+            square = loadedCard.square?.let {
+                if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString()
+            } ?: ""
+            price = loadedCard.price?.let {
+                if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString()
+            } ?: ""
+            pricePeriod = loadedCard.pricePeriod ?: "month"
+            utilitiesIncluded = loadedCard.utilitiesIncluded
+            description = loadedCard.description ?: ""
+            contact = loadedCard.contact ?: ""
+            checkedCriteriaIds = loadedScores.filter { it.value == 1.0 }.map { it.criteriaId }.toSet()
+            scoreValues = loadedScores.filter { it.value > 1.0 }
+                .associate { it.criteriaId to (it.value.toInt() - 1) }
+
+            isLoaded = true
+        } catch (_: kotlinx.coroutines.CancellationException) {
+        } catch (e: Exception) {
+            Toast.makeText(context, e.message ?: "Ошибка загрузки", Toast.LENGTH_SHORT).show()
+            shouldNavigateBack = true
+        }
+    }
+
     fun saveCard(isDraft: Boolean) {
         if (isSaving) return
         isSaving = true
 
         scope.launch {
             try {
-                val imageUrls = images.map { uri ->
+                val existingUrls = images.filterIsInstance<String>()
+                val newUris = images.filterIsInstance<Uri>()
+                val newUrls = newUris.map { uri ->
                     CardRepository.uploadImage(context, uri)
                 }
+                val allUrls = existingUrls + newUrls
 
-                val card = Card(
-                    userId = CardRepository.currentUserId(),
-                    name = name.ifBlank { "Без названия" },
-                    address = address.ifBlank { null },
-                    price = price.toDoubleOrNull(),
-                    square = square.toDoubleOrNull(),
-                    description = description.ifBlank { null },
-                    contact = contact.ifBlank { null },
-                    pricePeriod = if (price.isNotBlank()) pricePeriod else null,
-                    utilitiesIncluded = utilitiesIncluded,
-                    isDraft = isDraft,
-                    imageUrls = imageUrls
-                )
+                val savedCard = if (isEditMode) {
+                    val existingCard = CardRepository.getCardById(cardId!!)
+                    val updated = existingCard.copy(
+                        name = name.ifBlank { "Без названия" },
+                        address = address.ifBlank { null },
+                        price = price.toDoubleOrNull(),
+                        square = square.toDoubleOrNull(),
+                        description = description.ifBlank { null },
+                        contact = contact.ifBlank { null },
+                        pricePeriod = if (price.isNotBlank()) pricePeriod else null,
+                        utilitiesIncluded = utilitiesIncluded,
+                        isDraft = isDraft,
+                        imageUrls = allUrls
+                    )
+                    CardRepository.updateCard(updated)
+                } else {
+                    val card = Card(
+                        userId = CardRepository.currentUserId(),
+                        name = name.ifBlank { "Без названия" },
+                        address = address.ifBlank { null },
+                        price = price.toDoubleOrNull(),
+                        square = square.toDoubleOrNull(),
+                        description = description.ifBlank { null },
+                        contact = contact.ifBlank { null },
+                        pricePeriod = if (price.isNotBlank()) pricePeriod else null,
+                        utilitiesIncluded = utilitiesIncluded,
+                        isDraft = isDraft,
+                        imageUrls = allUrls
+                    )
+                    CardRepository.insertCard(card)
+                }
 
-                val savedCard = CardRepository.insertCard(card)
+                if (isEditMode) {
+                    CardRepository.deleteCardCriteriaScores(savedCard.cardId)
+                }
 
                 val checklistScores = checkedCriteriaIds.map { criteriaId ->
                     CardCriteriaScore(
@@ -199,206 +265,224 @@ fun CreateCardScreen(
                 .imePadding()
         ) {
             TopBar(
-                title = "Создать просмотр",
+                title = if (isEditMode) "Редактировать" else "Создать просмотр",
                 onBack = onBack,
                 actions = listOf(TopBarAction(R.drawable.ic_bin) { onDelete() }),
                 modifier = if (scrollState.value > 0) Modifier.bottomShadow() else Modifier
             )
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 20.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                PhotoPicker(
-                    images = images,
-                    onAdd = { uris -> images = images + uris },
-                    onDelete = { uri -> images = images - uri }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Название", style = Typography.headlineSmall, color = Dark)
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    placeholder = "Например, «Квартира 1»"
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Адрес", style = Typography.headlineSmall, color = Dark)
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = address,
-                    onValueChange = { address = it },
-                    placeholder = "Город, улица, дом, квартира"
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Площадь", style = Typography.headlineSmall, color = Dark)
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = square,
-                    onValueChange = { input ->
-                        if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
-                            square = input
-                        }
-                    },
-                    placeholder = "30 кв. м.",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(text = "Стоимость", style = Typography.headlineSmall, color = Dark)
-                    PeriodDropdown(
-                        selected = pricePeriod,
-                        onSelect = { pricePeriod = it }
-                    )
+            if (!isLoaded) {
+                Box(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.padding(top = 16.dp)) {
+                        FormShimmer()
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = price,
-                    onValueChange = { input ->
-                        if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
-                            price = input
-                        }
-                    },
-                    placeholder = "Например, «20 000»",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            } else {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 20.dp)
                 ) {
-                    Icon(
-                        painter = painterResource(
-                            id = if (utilitiesIncluded) R.drawable.ic_check_box
-                            else R.drawable.ic_check_box_empty
-                        ),
-                        contentDescription = null,
-                        tint = Blue,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { utilitiesIncluded = !utilitiesIncluded }
-                    )
-                    Text(text = "Включены ЖКУ", style = Typography.bodyLarge, color = Dark)
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Описание", style = Typography.headlineSmall, color = Dark)
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    placeholder = "Кратко опиши свои впечатления и мысли от просмотра",
-                    singleLine = false,
-                    height = 100.dp
-                )
-
-                val checklistCriteria = criteria.filter { it.type == "checklist" }
-                if (checklistCriteria.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(text = "Чек-лист", style = Typography.headlineSmall, color = Dark)
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val left = checklistCriteria.filterIndexed { i, _ -> i % 2 == 0 }
-                    val right = checklistCriteria.filterIndexed { i, _ -> i % 2 == 1 }
+                    PhotoPicker(
+                        images = images,
+                        onAdd = { uris -> images = images + uris },
+                        onDelete = { item -> images = images - item }
+                    )
 
+                    // name
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Название", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        placeholder = "Например, «Квартира 1»"
+                    )
+
+                    // address
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Адрес", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        placeholder = "Город, улица, дом, квартира"
+                    )
+
+                    // square
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Площадь", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = square,
+                        onValueChange = { input ->
+                            if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                                square = input
+                            }
+                        },
+                        placeholder = "30 кв. м.",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
+
+                    // cost
+                    Spacer(modifier = Modifier.height(24.dp))
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            left.forEach { item ->
-                                ChecklistItem(
-                                    item = item,
-                                    checked = item.criteriaId in checkedCriteriaIds,
-                                    onToggle = {
-                                        checkedCriteriaIds = if (item.criteriaId in checkedCriteriaIds) {
-                                            checkedCriteriaIds - item.criteriaId
-                                        } else {
-                                            checkedCriteriaIds + item.criteriaId
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            right.forEach { item ->
-                                ChecklistItem(
-                                    item = item,
-                                    checked = item.criteriaId in checkedCriteriaIds,
-                                    onToggle = {
-                                        checkedCriteriaIds = if (item.criteriaId in checkedCriteriaIds) {
-                                            checkedCriteriaIds - item.criteriaId
-                                        } else {
-                                            checkedCriteriaIds + item.criteriaId
-                                        }
-                                    }
-                                )
-                            }
-                        }
+                        Text(text = "Стоимость", style = Typography.headlineSmall, color = Dark)
+                        PeriodDropdown(
+                            selected = pricePeriod,
+                            onSelect = { pricePeriod = it }
+                        )
                     }
-                }
-
-                val scoreCriteria = criteria.filter { it.type == "score" }
-                if (scoreCriteria.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(text = "Критерии оценки", style = Typography.headlineSmall, color = Dark)
                     Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = price,
+                        onValueChange = { input ->
+                            if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
+                                price = input
+                            }
+                        },
+                        placeholder = "Например, «20 000»",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    )
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        scoreCriteria.forEach { item ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth()
+                    // utilities included
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(
+                                id = if (utilitiesIncluded) R.drawable.ic_check_box
+                                else R.drawable.ic_check_box_empty
+                            ),
+                            contentDescription = null,
+                            tint = Blue,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { utilitiesIncluded = !utilitiesIncluded }
+                        )
+                        Text(text = "Включены ЖКУ", style = Typography.bodyLarge, color = Dark)
+                    }
+
+                    // description
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Описание", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        placeholder = "Кратко опиши свои впечатления и мысли от просмотра",
+                        singleLine = false,
+                        height = 100.dp
+                    )
+
+                    // check list
+                    val checklistCriteria = criteria.filter { it.type == "checklist" }
+                    if (checklistCriteria.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(text = "Чек-лист", style = Typography.headlineSmall, color = Dark)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        val left = checklistCriteria.filterIndexed { i, _ -> i % 2 == 0 }
+                        val right = checklistCriteria.filterIndexed { i, _ -> i % 2 == 1 }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Text(
-                                    text = item.name,
-                                    style = Typography.bodyLarge,
-                                    color = Dark,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                StepSlider(
-                                    value = scoreValues[item.criteriaId] ?: 0,
-                                    onValueChange = { scoreValues = scoreValues + (item.criteriaId to it) },
-                                    modifier = Modifier.weight(1f)
-                                )
+                                left.forEach { item ->
+                                    ChecklistItem(
+                                        item = item,
+                                        checked = item.criteriaId in checkedCriteriaIds,
+                                        onToggle = {
+                                            checkedCriteriaIds = if (item.criteriaId in checkedCriteriaIds) {
+                                                checkedCriteriaIds - item.criteriaId
+                                            } else {
+                                                checkedCriteriaIds + item.criteriaId
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                right.forEach { item ->
+                                    ChecklistItem(
+                                        item = item,
+                                        checked = item.criteriaId in checkedCriteriaIds,
+                                        onToggle = {
+                                            checkedCriteriaIds = if (item.criteriaId in checkedCriteriaIds) {
+                                                checkedCriteriaIds - item.criteriaId
+                                            } else {
+                                                checkedCriteriaIds + item.criteriaId
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
+
+                    // criteria
+                    val scoreCriteria = criteria.filter { it.type == "score" }
+                    if (scoreCriteria.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(text = "Критерии оценки", style = Typography.headlineSmall, color = Dark)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            scoreCriteria.forEach { item ->
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = item.name,
+                                        style = Typography.bodyLarge,
+                                        color = Dark,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    StepSlider(
+                                        value = scoreValues[item.criteriaId] ?: 0,
+                                        onValueChange = { scoreValues = scoreValues + (item.criteriaId to it) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // contacts
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(text = "Контакты", style = Typography.headlineSmall, color = Dark)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextField(
+                        value = contact,
+                        onValueChange = { contact = it },
+                        placeholder = "Номер или ссылка на владельца"
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Контакты", style = Typography.headlineSmall, color = Dark)
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = contact,
-                    onValueChange = { contact = it },
-                    placeholder = "Номер или ссылка на владельца"
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
             }
 
+            // buttons
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -412,13 +496,13 @@ fun CreateCardScreen(
                     SecondaryButton(
                         text = "Сохранить как черновик",
                         onClick = { saveCard(isDraft = true) },
-                        enabled = name.isNotBlank() && !isSaving,
+                        enabled = name.isNotBlank() && !isSaving && isLoaded,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         text = "Сохранить",
                         onClick = { saveCard(isDraft = false) },
-                        enabled = name.isNotBlank() && !isSaving,
+                        enabled = name.isNotBlank() && !isSaving && isLoaded,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -456,5 +540,61 @@ private fun ChecklistItem(
             color = Dark,
             modifier = Modifier.padding(top = 2.dp)
         )
+    }
+}
+
+@Composable
+private fun FormShimmer() {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(LightBlue, Color(0xFFD8E0EE), LightBlue),
+        start = Offset(translateAnim - 200f, 0f),
+        end = Offset(translateAnim, 0f)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(0.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            repeat(3) {
+                Box(
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(shimmerBrush)
+                )
+            }
+        }
+
+        repeat(5) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.3f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerBrush)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(shimmerBrush)
+            )
+        }
     }
 }

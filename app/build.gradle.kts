@@ -74,6 +74,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:storage-kt")
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.exifinterface)
+    implementation(libs.androidx.compose.animation.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
