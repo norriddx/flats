@@ -177,20 +177,17 @@ fun ViewCardScreen(
 
     LaunchedEffect(cardId) {
         try {
-            card = CardRepository.getCardById(cardId)
+            val loadedCard = CardRepository.getCardById(cardId)
+            val loadedCriteria = CardRepository.getCriteria()
+            val loadedScores = CardRepository.getAllScores().filter { it.cardId == cardId }
+            criteria = loadedCriteria
+            scores = loadedScores
+            card = loadedCard
         } catch (_: kotlinx.coroutines.CancellationException) {
         } catch (e: Exception) {
             Toast.makeText(context, e.message ?: "Ошибка загрузки", Toast.LENGTH_SHORT).show()
             shouldNavigateBack = true
         }
-    }
-
-    LaunchedEffect(cardId) {
-        try {
-            criteria = CardRepository.getCriteria()
-            scores = CardRepository.getAllScores().filter { it.cardId == cardId }
-        } catch (_: kotlinx.coroutines.CancellationException) {
-        } catch (_: Exception) {}
     }
 
     LaunchedEffect(shouldNavigateBack) {

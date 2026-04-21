@@ -33,11 +33,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -137,7 +139,21 @@ fun CardsScreen(
     var showFilterSheet by remember { mutableStateOf(false) }
     var checklistCriteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var allScores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
-    val listState = rememberLazyListState()
+
+    val savedIndex = rememberSaveable { mutableStateOf(0) }
+    val savedOffset = rememberSaveable { mutableStateOf(0) }
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = savedIndex.value,
+        initialFirstVisibleItemScrollOffset = savedOffset.value
+    )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            savedIndex.value = listState.firstVisibleItemIndex
+            savedOffset.value = listState.firstVisibleItemScrollOffset
+        }
+    }
+
     val isScrolled by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
@@ -188,8 +204,13 @@ fun CardsScreen(
         toggleCardId = null
     }
 
+    var isFirstRun by remember { mutableStateOf(true) }
     LaunchedEffect(appliedFilter, searchQuery) {
-        listState.scrollToItem(0)
+        if (isFirstRun) {
+            isFirstRun = false
+        } else {
+            listState.scrollToItem(0)
+        }
     }
 
     val priceMin = cards?.mapNotNull { it.price }?.minOrNull()
