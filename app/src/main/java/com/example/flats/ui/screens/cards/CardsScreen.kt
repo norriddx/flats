@@ -129,6 +129,7 @@ fun CardsScreen(
     onNavigateToComparison: () -> Unit,
     onNavigateToCreateCard: () -> Unit,
     onNavigateToViewCard: (Long) -> Unit,
+    onNavigateToFavourites: () -> Unit,
     onLogout: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -232,7 +233,7 @@ fun CardsScreen(
                 title = "Мои просмотры",
                 actions = listOf(
                     TopBarAction(R.drawable.ic_archive) { },
-                    TopBarAction(R.drawable.ic_favourite) { }
+                    TopBarAction(R.drawable.ic_favourite) { onNavigateToFavourites() }
                 )
             )
 

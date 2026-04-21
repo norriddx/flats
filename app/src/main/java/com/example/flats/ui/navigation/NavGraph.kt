@@ -14,6 +14,7 @@ import com.example.flats.data.SupabaseClient
 import com.example.flats.ui.screens.auth.AuthScreen
 import com.example.flats.ui.screens.cards.CardsScreen
 import com.example.flats.ui.screens.cards.CreateCardScreen
+import com.example.flats.ui.screens.cards.FavouritesScreen
 import com.example.flats.ui.screens.cards.ViewCardScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import io.github.jan.supabase.auth.auth
@@ -31,7 +32,7 @@ fun NavGraph(navController: NavHostController) {
         exitTransition = { fadeOut(animationSpec = tween(150)) },
         popEnterTransition = { fadeIn(animationSpec = tween(150)) },
         popExitTransition = { fadeOut(animationSpec = tween(150)) }
-    )  {
+    ) {
         composable(Routes.AUTH) {
             AuthScreen(
                 onAuthSuccess = {
@@ -49,6 +50,7 @@ fun NavGraph(navController: NavHostController) {
                 onNavigateToViewCard = { cardId ->
                     navController.navigate(Routes.viewCard(cardId))
                 },
+                onNavigateToFavourites = { navController.navigate(Routes.FAVOURITES) },
                 onLogout = {
                     navController.navigate(Routes.AUTH) {
                         popUpTo(0) { inclusive = true }
@@ -86,6 +88,16 @@ fun NavGraph(navController: NavHostController) {
                 cardId = cardId,
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(Routes.editCard(cardId)) }
+            )
+        }
+
+        composable(Routes.FAVOURITES) {
+            FavouritesScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
+                onNavigateToViewCard = { cardId ->
+                    navController.navigate(Routes.viewCard(cardId))
+                }
             )
         }
 
