@@ -168,6 +168,7 @@ fun ViewCardScreen(
     var card by remember { mutableStateOf<Card?>(null) }
     var isDeleting by remember { mutableStateOf(false) }
     var isArchiving by remember { mutableStateOf(false) }
+    var isRestoring by remember { mutableStateOf(false) }
     var shouldNavigateBack by remember { mutableStateOf(false) }
     var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var scores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
@@ -524,35 +525,59 @@ fun ViewCardScreen(
                         .background(Color.White)
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SecondaryButton(
-                            text = "В архив",
+                    if (currentCard.isArchived) {
+                        Button(
+                            text = "Восстановить",
                             onClick = {
-                                if (isArchiving) return@SecondaryButton
-                                isArchiving = true
+                                if (isRestoring) return@Button
+                                isRestoring = true
                                 scope.launch {
                                     try {
-                                        CardRepository.archiveCard(cardId)
+                                        CardRepository.unarchiveCard(cardId)
                                         shouldNavigateBack = true
                                     } catch (e: kotlinx.coroutines.CancellationException) {
                                     } catch (e: Exception) {
-                                        isArchiving = false
-                                        Toast.makeText(context, e.message ?: "Ошибка архивации", Toast.LENGTH_SHORT).show()
+                                        isRestoring = false
+                                        Toast.makeText(context, e.message ?: "Ошибка восстановления", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             },
-                            enabled = !isArchiving,
+                            enabled = !isRestoring,
                             contentPadding = PaddingValues(horizontal = 12.dp),
                             maxLines = 1,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        Button(
-                            text = "Редактировать",
-                            onClick = onEdit,
-                            contentPadding = PaddingValues(horizontal = 12.dp),
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f)
-                        )
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            SecondaryButton(
+                                text = "В архив",
+                                onClick = {
+                                    if (isArchiving) return@SecondaryButton
+                                    isArchiving = true
+                                    scope.launch {
+                                        try {
+                                            CardRepository.archiveCard(cardId)
+                                            shouldNavigateBack = true
+                                        } catch (e: kotlinx.coroutines.CancellationException) {
+                                        } catch (e: Exception) {
+                                            isArchiving = false
+                                            Toast.makeText(context, e.message ?: "Ошибка архивации", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                enabled = !isArchiving,
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Button(
+                                text = "Редактировать",
+                                onClick = onEdit,
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }

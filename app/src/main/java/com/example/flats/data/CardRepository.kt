@@ -178,6 +178,16 @@ object CardRepository {
         }
     }
 
+    suspend fun unarchiveCard(cardId: Long) {
+        withRetry {
+            client.postgrest.from("card").update({
+                set("is_archived", false)
+            }) {
+                filter { eq("card_id", cardId) }
+            }
+        }
+    }
+
     suspend fun getCriteria(): List<Criteria> = withRetry {
         val userId = client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")
