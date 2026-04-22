@@ -3,13 +3,25 @@ package com.example.flats.ui.navigation
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.flats.data.OnboardingPreferences
 import com.example.flats.data.SupabaseClient
 import com.example.flats.ui.screens.auth.AuthScreen
 import com.example.flats.ui.screens.cards.ArchiveScreen
@@ -20,23 +32,38 @@ import com.example.flats.ui.screens.cards.ViewCardScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import com.example.flats.ui.screens.onboarding.OnboardingScreen
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.status.SessionStatus
 
 @Composable
-fun NavGraph(
-    navController: NavHostController,
-    onboardingCompleted: Boolean
-) {
-    val startDestination = remember {
-        when {
-            !onboardingCompleted -> Routes.ONBOARDING
-            SupabaseClient.client.auth.currentSessionOrNull() != null -> Routes.CARDS
+fun NavGraph(navController: NavHostController) {
+    val context = LocalContext.current
+    val onboardingFlow = remember { OnboardingPreferences.isCompleted(context) }
+    val onboardingCompleted by onboardingFlow.collectAsState(initial = null)
+    val sessionStatus by SupabaseClient.client.auth.sessionStatus.collectAsState()
+
+    var startDestination by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(onboardingCompleted, sessionStatus) {
+        if (startDestination != null) return@LaunchedEffect
+        if (onboardingCompleted == null) return@LaunchedEffect
+        if (sessionStatus is SessionStatus.Initializing) return@LaunchedEffect
+
+        startDestination = when {
+            onboardingCompleted == false -> Routes.ONBOARDING
+            sessionStatus is SessionStatus.Authenticated -> Routes.CARDS
             else -> Routes.AUTH
         }
     }
 
+    val destination = startDestination
+    if (destination == null) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.White))
+        return
+    }
+
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = destination,
         enterTransition = { fadeIn(animationSpec = tween(150)) },
         exitTransition = { fadeOut(animationSpec = tween(150)) },
         popEnterTransition = { fadeIn(animationSpec = tween(150)) },
