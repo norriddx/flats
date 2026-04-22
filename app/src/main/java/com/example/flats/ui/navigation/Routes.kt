@@ -1,6 +1,7 @@
 package com.example.flats.ui.navigation
 
 object Routes {
+    const val ONBOARDING  = "onboarding"
     const val AUTH        = "auth"
     const val CARDS       = "cards"
     const val CREATE_CARD = "create_card"

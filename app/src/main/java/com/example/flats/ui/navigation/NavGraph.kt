@@ -18,12 +18,20 @@ import com.example.flats.ui.screens.cards.CreateCardScreen
 import com.example.flats.ui.screens.cards.FavouritesScreen
 import com.example.flats.ui.screens.cards.ViewCardScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
+import com.example.flats.ui.screens.onboarding.OnboardingScreen
 import io.github.jan.supabase.auth.auth
 
 @Composable
-fun NavGraph(navController: NavHostController) {
+fun NavGraph(
+    navController: NavHostController,
+    onboardingCompleted: Boolean
+) {
     val startDestination = remember {
-        if (SupabaseClient.client.auth.currentSessionOrNull() != null) Routes.CARDS else Routes.AUTH
+        when {
+            !onboardingCompleted -> Routes.ONBOARDING
+            SupabaseClient.client.auth.currentSessionOrNull() != null -> Routes.CARDS
+            else -> Routes.AUTH
+        }
     }
 
     NavHost(
@@ -34,6 +42,16 @@ fun NavGraph(navController: NavHostController) {
         popEnterTransition = { fadeIn(animationSpec = tween(150)) },
         popExitTransition = { fadeOut(animationSpec = tween(150)) }
     ) {
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onFinish = {
+                    navController.navigate(Routes.AUTH) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Routes.AUTH) {
             AuthScreen(
                 onAuthSuccess = {
