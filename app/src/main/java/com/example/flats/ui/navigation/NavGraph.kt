@@ -159,7 +159,11 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable(Routes.COMPARISON) {
-            ComparisonScreen(onBack = { navController.popBackStack() })
+            ComparisonScreen(
+                onNavigateToCards = {
+                    navController.popBackStack(Routes.CARDS, inclusive = false)
+                }
+            )
         }
     }
 }
