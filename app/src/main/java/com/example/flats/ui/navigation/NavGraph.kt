@@ -29,6 +29,7 @@ import com.example.flats.ui.screens.cards.CardsScreen
 import com.example.flats.ui.screens.cards.CreateCardScreen
 import com.example.flats.ui.screens.cards.FavouritesScreen
 import com.example.flats.ui.screens.cards.ViewCardScreen
+import com.example.flats.ui.screens.comparison.CardSelectionScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import com.example.flats.ui.screens.onboarding.OnboardingScreen
 import io.github.jan.supabase.auth.auth
@@ -158,10 +159,42 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Routes.COMPARISON) {
+        composable(Routes.COMPARISON) { backStackEntry ->
+            val savedStateHandle = backStackEntry.savedStateHandle
+            val selectionResultArray by savedStateHandle
+                .getStateFlow<LongArray?>("selection_result", null)
+                .collectAsState()
+            val selectionResult = selectionResultArray?.toList()
+
             ComparisonScreen(
+                externalSelection = selectionResult,
+                onExternalSelectionConsumed = {
+                    savedStateHandle["selection_result"] = null
+                },
+                onNavigateToSelection = { currentIds ->
+                    backStackEntry.savedStateHandle["initial_selection"] = currentIds.toLongArray()
+                    navController.navigate(Routes.CARD_SELECTION)
+                },
                 onNavigateToCards = {
                     navController.popBackStack(Routes.CARDS, inclusive = false)
+                }
+            )
+        }
+
+        composable(Routes.CARD_SELECTION) {
+            val initialIds = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<LongArray>("initial_selection")
+                ?.toList() ?: emptyList()
+
+            CardSelectionScreen(
+                initialSelectedIds = initialIds,
+                onBack = { navController.popBackStack() },
+                onSave = { ids ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("selection_result", ids.toLongArray())
+                    navController.popBackStack()
                 }
             )
         }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.flats.R
+import com.example.flats.data.CardRepository
 import com.example.flats.data.model.Card
 import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
@@ -50,15 +52,41 @@ private const val MAX_SLOTS = 4
 
 @Composable
 fun ComparisonScreen(
+    externalSelection: List<Long>?,
+    onExternalSelectionConsumed: () -> Unit,
+    onNavigateToSelection: (List<Long>) -> Unit,
     onNavigateToCards: () -> Unit
 ) {
-    // selected cards per slot (null = empty slot)
-    var selectedCards by remember {
-        mutableStateOf<List<Card?>>(List(MAX_SLOTS) { null })
+    var selectedIds by remember { mutableStateOf<List<Long>>(emptyList()) }
+    var loadedCards by remember { mutableStateOf<List<Card>>(emptyList()) }
+
+    // apply incoming selection from card selection screen
+    LaunchedEffect(externalSelection) {
+        if (externalSelection != null) {
+            selectedIds = externalSelection
+            onExternalSelectionConsumed()
+        }
     }
 
-    val selectedCount = selectedCards.count { it != null }
-    val canCompare = selectedCount >= 2
+    // load cards by selected ids preserving order
+    LaunchedEffect(selectedIds) {
+        if (selectedIds.isEmpty()) {
+            loadedCards = emptyList()
+            return@LaunchedEffect
+        }
+        try {
+            val all = CardRepository.getCards()
+            loadedCards = selectedIds.mapNotNull { id -> all.find { it.cardId == id } }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        }
+    }
+
+    val canCompare = selectedIds.size >= 2
+
+    // 4 slots: first N filled, rest empty
+    val slots: List<Card?> = (0 until MAX_SLOTS).map { loadedCards.getOrNull(it) }
 
     Box(
         modifier = Modifier
@@ -74,7 +102,7 @@ fun ComparisonScreen(
                 title = "Сравнить",
                 actions = listOf(
                     TopBarAction(R.drawable.ic_reset) {
-                        selectedCards = List(MAX_SLOTS) { null }
+                        selectedIds = emptyList()
                     }
                 )
             )
@@ -100,24 +128,12 @@ fun ComparisonScreen(
                 // 2x2 grid of slots
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ComparisonSlot(
-                            card = selectedCards[0],
-                            onClick = { /* TODO: open card selector for slot 0 */ }
-                        )
-                        ComparisonSlot(
-                            card = selectedCards[1],
-                            onClick = { /* TODO: open card selector for slot 1 */ }
-                        )
+                        ComparisonSlot(card = slots[0], onClick = { onNavigateToSelection(selectedIds) })
+                        ComparisonSlot(card = slots[1], onClick = { onNavigateToSelection(selectedIds) })
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ComparisonSlot(
-                            card = selectedCards[2],
-                            onClick = { /* TODO: open card selector for slot 2 */ }
-                        )
-                        ComparisonSlot(
-                            card = selectedCards[3],
-                            onClick = { /* TODO: open card selector for slot 3 */ }
-                        )
+                        ComparisonSlot(card = slots[2], onClick = { onNavigateToSelection(selectedIds) })
+                        ComparisonSlot(card = slots[3], onClick = { onNavigateToSelection(selectedIds) })
                     }
                 }
 
