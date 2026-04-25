@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -46,6 +47,7 @@ import com.example.flats.ui.components.TopBarAction
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.LightBlue
+import com.example.flats.ui.theme.LightGray
 import com.example.flats.ui.theme.Typography
 
 private const val MAX_SLOTS = 4
@@ -128,12 +130,28 @@ fun ComparisonScreen(
                 // 2x2 grid of slots
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ComparisonSlot(card = slots[0], onClick = { onNavigateToSelection(selectedIds) })
-                        ComparisonSlot(card = slots[1], onClick = { onNavigateToSelection(selectedIds) })
+                        ComparisonSlot(
+                            card = slots[0],
+                            onClick = { onNavigateToSelection(selectedIds) },
+                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 0 } }
+                        )
+                        ComparisonSlot(
+                            card = slots[1],
+                            onClick = { onNavigateToSelection(selectedIds) },
+                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 1 } }
+                        )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        ComparisonSlot(card = slots[2], onClick = { onNavigateToSelection(selectedIds) })
-                        ComparisonSlot(card = slots[3], onClick = { onNavigateToSelection(selectedIds) })
+                        ComparisonSlot(
+                            card = slots[2],
+                            onClick = { onNavigateToSelection(selectedIds) },
+                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 2 } }
+                        )
+                        ComparisonSlot(
+                            card = slots[3],
+                            onClick = { onNavigateToSelection(selectedIds) },
+                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 3 } }
+                        )
                     }
                 }
 
@@ -166,34 +184,68 @@ fun ComparisonScreen(
 @Composable
 private fun ComparisonSlot(
     card: Card?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val imageUrl = card?.imageUrls?.firstOrNull()
     Box(
         modifier = Modifier
             .size(120.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (imageUrl == null) LightBlue else Color.Transparent)
+            .background(LightBlue, RoundedCornerShape(10.dp))
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
             ) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        if (imageUrl != null) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize()
-            )
-        } else {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_add),
-                contentDescription = null,
-                tint = Gray,
-                modifier = Modifier.size(24.dp)
-            )
+        when {
+            imageUrl != null -> {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(10.dp))
+                )
+            }
+            card != null -> {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_house),
+                    contentDescription = null,
+                    tint = LightGray,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            else -> {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_add),
+                    contentDescription = null,
+                    tint = Gray,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        if (card != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(44.dp)
+                    .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onDelete() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_bin),
+                    contentDescription = null,
+                    tint = Dark,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
