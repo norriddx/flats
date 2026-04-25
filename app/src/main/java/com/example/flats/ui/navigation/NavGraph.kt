@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,6 +44,8 @@ fun NavGraph(navController: NavHostController) {
     val sessionStatus by SupabaseClient.client.auth.sessionStatus.collectAsState()
 
     var startDestination by remember { mutableStateOf<String?>(null) }
+
+    var comparisonSelectedIds by rememberSaveable { mutableStateOf<List<Long>>(emptyList()) }
 
     LaunchedEffect(onboardingCompleted, sessionStatus) {
         if (startDestination != null) return@LaunchedEffect
@@ -159,22 +162,11 @@ fun NavGraph(navController: NavHostController) {
             )
         }
 
-        composable(Routes.COMPARISON) { backStackEntry ->
-            val savedStateHandle = backStackEntry.savedStateHandle
-            val selectionResultArray by savedStateHandle
-                .getStateFlow<LongArray?>("selection_result", null)
-                .collectAsState()
-            val selectionResult = selectionResultArray?.toList()
-
+        composable(Routes.COMPARISON) {
             ComparisonScreen(
-                externalSelection = selectionResult,
-                onExternalSelectionConsumed = {
-                    savedStateHandle["selection_result"] = null
-                },
-                onNavigateToSelection = { currentIds ->
-                    backStackEntry.savedStateHandle["initial_selection"] = currentIds.toLongArray()
-                    navController.navigate(Routes.CARD_SELECTION)
-                },
+                selectedIds = comparisonSelectedIds,
+                onSelectedIdsChange = { comparisonSelectedIds = it },
+                onNavigateToSelection = { navController.navigate(Routes.CARD_SELECTION) },
                 onNavigateToCards = {
                     navController.popBackStack(Routes.CARDS, inclusive = false)
                 }
@@ -182,18 +174,11 @@ fun NavGraph(navController: NavHostController) {
         }
 
         composable(Routes.CARD_SELECTION) {
-            val initialIds = navController.previousBackStackEntry
-                ?.savedStateHandle
-                ?.get<LongArray>("initial_selection")
-                ?.toList() ?: emptyList()
-
             CardSelectionScreen(
-                initialSelectedIds = initialIds,
+                initialSelectedIds = comparisonSelectedIds,
                 onBack = { navController.popBackStack() },
                 onSave = { ids ->
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("selection_result", ids.toLongArray())
+                    comparisonSelectedIds = ids
                     navController.popBackStack()
                 }
             )

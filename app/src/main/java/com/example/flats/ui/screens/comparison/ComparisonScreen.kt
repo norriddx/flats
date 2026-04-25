@@ -54,21 +54,12 @@ private const val MAX_SLOTS = 4
 
 @Composable
 fun ComparisonScreen(
-    externalSelection: List<Long>?,
-    onExternalSelectionConsumed: () -> Unit,
-    onNavigateToSelection: (List<Long>) -> Unit,
+    selectedIds: List<Long>,
+    onSelectedIdsChange: (List<Long>) -> Unit,
+    onNavigateToSelection: () -> Unit,
     onNavigateToCards: () -> Unit
 ) {
-    var selectedIds by remember { mutableStateOf<List<Long>>(emptyList()) }
     var loadedCards by remember { mutableStateOf<List<Card>>(emptyList()) }
-
-    // apply incoming selection from card selection screen
-    LaunchedEffect(externalSelection) {
-        if (externalSelection != null) {
-            selectedIds = externalSelection
-            onExternalSelectionConsumed()
-        }
-    }
 
     // load cards by selected ids preserving order
     LaunchedEffect(selectedIds) {
@@ -104,7 +95,7 @@ fun ComparisonScreen(
                 title = "Сравнить",
                 actions = listOf(
                     TopBarAction(R.drawable.ic_reset) {
-                        selectedIds = emptyList()
+                        onSelectedIdsChange(emptyList())
                     }
                 )
             )
@@ -117,7 +108,6 @@ fun ComparisonScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // hint text
                 Text(
                     text = "Выбери от 2 до 4\nквартир или домов",
                     style = Typography.bodyLarge,
@@ -132,32 +122,31 @@ fun ComparisonScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         ComparisonSlot(
                             card = slots[0],
-                            onClick = { onNavigateToSelection(selectedIds) },
-                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 0 } }
+                            onClick = { onNavigateToSelection() },
+                            onDelete = { onSelectedIdsChange(selectedIds.filterIndexed { i, _ -> i != 0 }) }
                         )
                         ComparisonSlot(
                             card = slots[1],
-                            onClick = { onNavigateToSelection(selectedIds) },
-                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 1 } }
+                            onClick = { onNavigateToSelection() },
+                            onDelete = { onSelectedIdsChange(selectedIds.filterIndexed { i, _ -> i != 1 }) }
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         ComparisonSlot(
                             card = slots[2],
-                            onClick = { onNavigateToSelection(selectedIds) },
-                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 2 } }
+                            onClick = { onNavigateToSelection() },
+                            onDelete = { onSelectedIdsChange(selectedIds.filterIndexed { i, _ -> i != 2 }) }
                         )
                         ComparisonSlot(
                             card = slots[3],
-                            onClick = { onNavigateToSelection(selectedIds) },
-                            onDelete = { selectedIds = selectedIds.filterIndexed { i, _ -> i != 3 } }
+                            onClick = { onNavigateToSelection() },
+                            onDelete = { onSelectedIdsChange(selectedIds.filterIndexed { i, _ -> i != 3 }) }
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // compare button, fixed width 256
                 Box(modifier = Modifier.width(256.dp)) {
                     Button(
                         text = "Сравнить",
