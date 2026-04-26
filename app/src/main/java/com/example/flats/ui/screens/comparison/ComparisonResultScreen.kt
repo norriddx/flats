@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -50,6 +50,7 @@ import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
+import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.Green
@@ -90,11 +91,23 @@ fun ComparisonResultScreen(
     }
 
     val checklistCriteria = criteria.filter { it.type == "checklist" }
+    val scoreCriteria = criteria.filter { it.type == "score" }
 
     val checkedTotalByCard: Map<Long, Int> = cards.associate { card ->
         card.cardId to checklistCriteria.count { c ->
             scores.any { it.cardId == card.cardId && it.criteriaId == c.criteriaId && it.value == 1.0 }
         }
+    }
+
+    val totalByCard: Map<Long, Double> = cards.associate { card ->
+        val checked = checkedTotalByCard[card.cardId] ?: 0
+        val scoreSum = scoreCriteria.sumOf { c ->
+            scores.find { it.cardId == card.cardId && it.criteriaId == c.criteriaId }
+                ?.value?.toInt() ?: 0
+        }
+        val maxTotal = checklistCriteria.size + scoreCriteria.size * 5
+        val rating = if (maxTotal > 0) (checked + scoreSum).toDouble() / maxTotal * 5.0 else 0.0
+        card.cardId to rating
     }
 
     val horizontalScroll = rememberScrollState()
@@ -265,8 +278,6 @@ fun ComparisonResultScreen(
                         }
                     }
 
-                    val scoreCriteria = criteria.filter { it.type == "score" }
-
                     if (scoreCriteria.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(24.dp))
 
@@ -400,6 +411,59 @@ fun ComparisonResultScreen(
                                         style = Typography.bodyMedium,
                                         color = Dark
                                     )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = OuterPadding)
+                                .width(LeftColumnWidth)
+                        ) {
+                            Text(
+                                text = "Итог",
+                                style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Dark
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(GapBeforeImages))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clipToBounds()
+                                .horizontalScroll(horizontalScroll)
+                                .padding(end = OuterPadding),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            cards.forEachIndexed { index, card ->
+                                if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                Box(
+                                    modifier = Modifier.width(ImageSize),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_star),
+                                            contentDescription = null,
+                                            tint = Blue,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Text(
+                                            text = String.format("%.1f", totalByCard[card.cardId] ?: 0.0),
+                                            style = Typography.bodyMedium,
+                                            color = Dark
+                                        )
+                                    }
                                 }
                             }
                         }
