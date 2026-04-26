@@ -1,5 +1,10 @@
 package com.example.flats.ui.screens.comparison
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
@@ -38,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -83,8 +90,10 @@ fun ComparisonResultScreen(
     var cards by remember { mutableStateOf<List<Card>>(emptyList()) }
     var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var scores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(selectedIds) {
+        isLoading = true
         try {
             val all = CardRepository.getCards()
             cards = selectedIds.mapNotNull { id -> all.find { it.cardId == id } }
@@ -94,6 +103,8 @@ fun ComparisonResultScreen(
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (_: Exception) {
+        } finally {
+            isLoading = false
         }
     }
 
@@ -161,192 +172,95 @@ fun ComparisonResultScreen(
             )
 
             CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onGloballyPositioned { coords ->
-                            contentTopY = coords.positionInRoot().y.toInt()
-                        }
-                ) {
-                    if (bestIndex != null && totalRowBottomY > 0) {
-                        val density = LocalDensity.current
-                        val offsetXDp = with(density) { (-horizontalScroll.value).toDp() }
-                        val highlightHeightDp = with(density) {
-                            (totalRowBottomY - contentTopY).toDp()
-                        } - 24.dp + HighlightPad * 2
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clipToBounds()
-                                .padding(start = OuterPadding + LeftColumnWidth + GapBeforeImages, end = OuterPadding)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .offset(x = offsetXDp + (ImageSize + ImageSpacing) * bestIndex - HighlightPad, y = 24.dp - HighlightPad)
-                                    .width(ImageSize + HighlightPad * 2)
-                                    .height(highlightHeightDp)
-                                    .border(1.dp, Blue, RoundedCornerShape(10.dp))
-                            )
-                        }
-                    }
-
-                    Column(
+                if (isLoading) {
+                    ResultShimmer(cardsCount = selectedIds.size)
+                } else {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = 80.dp)
-                    ) {
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            Spacer(modifier = Modifier.width(OuterPadding + LeftColumnWidth + GapBeforeImages))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clipToBounds()
-                                    .horizontalScroll(horizontalScroll)
-                                    .padding(end = OuterPadding)
-                            ) {
-                                cards.forEachIndexed { index, card ->
-                                    if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
-                                    Box(
-                                        modifier = Modifier
-                                            .size(ImageSize)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(LightBlue)
-                                            .clickable(
-                                                indication = null,
-                                                interactionSource = remember { MutableInteractionSource() }
-                                            ) { onNavigateToViewCard(card.cardId) }
-                                    ) {
-                                        val firstImage = card.imageUrls.firstOrNull()
-                                        if (firstImage != null) {
-                                            AsyncImage(
-                                                model = firstImage,
-                                                contentDescription = null,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier.matchParentSize()
-                                            )
-                                        } else {
-                                            Box(
-                                                modifier = Modifier.matchParentSize(),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.ic_house),
-                                                    contentDescription = null,
-                                                    tint = LightGray,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                            .padding(bottom = HighlightPad)
+                            .onGloballyPositioned { coords ->
+                                contentTopY = coords.positionInRoot().y.toInt()
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Row(modifier = Modifier.fillMaxWidth()) {
+                    ) {
+                        if (bestIndex != null && totalRowBottomY > 0) {
+                            val density = LocalDensity.current
+                            val offsetXDp = with(density) { (-horizontalScroll.value).toDp() }
+                            val highlightHeightDp = with(density) {
+                                (totalRowBottomY - contentTopY).toDp()
+                            } - 24.dp + HighlightPad * 2
                             Box(
                                 modifier = Modifier
-                                    .padding(start = OuterPadding)
-                                    .width(LeftColumnWidth)
-                            ) {
-                                Text(
-                                    text = "Чек-лист",
-                                    style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = Dark
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(GapBeforeImages))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
                                     .clipToBounds()
-                                    .horizontalScroll(horizontalScroll)
-                                    .padding(end = OuterPadding)
-                            ) {
-                                cards.forEachIndexed { index, card ->
-                                    if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
-                                    Box(
-                                        modifier = Modifier.width(ImageSize),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "${checkedTotalByCard[card.cardId] ?: 0}/${checklistCriteria.size}",
-                                            style = Typography.bodyMedium,
-                                            color = Gray
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        checklistCriteria.forEachIndexed { rowIndex, c ->
-                            if (rowIndex > 0) Spacer(modifier = Modifier.height(16.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(start = OuterPadding + LeftColumnWidth + GapBeforeImages, end = OuterPadding)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .padding(start = OuterPadding)
-                                        .width(LeftColumnWidth)
-                                ) {
-                                    Text(
-                                        text = c.name,
-                                        style = Typography.bodyMedium,
-                                        color = Dark
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(GapBeforeImages))
+                                        .offset(x = offsetXDp + (ImageSize + ImageSpacing) * bestIndex - HighlightPad, y = 24.dp - HighlightPad)
+                                        .width(ImageSize + HighlightPad * 2)
+                                        .height(highlightHeightDp)
+                                        .border(1.dp, Blue, RoundedCornerShape(10.dp))
+                                )
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                                .padding(bottom = 80.dp)
+                        ) {
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Spacer(modifier = Modifier.width(OuterPadding + LeftColumnWidth + GapBeforeImages))
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clipToBounds()
                                         .horizontalScroll(horizontalScroll)
-                                        .padding(end = OuterPadding),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(end = OuterPadding)
                                 ) {
                                     cards.forEachIndexed { index, card ->
                                         if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
-                                        val checked = scores.any {
-                                            it.cardId == card.cardId &&
-                                                    it.criteriaId == c.criteriaId &&
-                                                    it.value == 1.0
-                                        }
                                         Box(
-                                            modifier = Modifier.width(ImageSize),
-                                            contentAlignment = Alignment.Center
+                                            modifier = Modifier
+                                                .size(ImageSize)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(LightBlue)
+                                                .clickable(
+                                                    indication = null,
+                                                    interactionSource = remember { MutableInteractionSource() }
+                                                ) { onNavigateToViewCard(card.cardId) }
                                         ) {
-                                            Icon(
-                                                painter = painterResource(
-                                                    id = if (checked) R.drawable.ic_check_box
-                                                    else R.drawable.ic_closw
-                                                ),
-                                                contentDescription = null,
-                                                tint = if (checked) Green else Red,
-                                                modifier = Modifier.size(24.dp)
-                                            )
+                                            val firstImage = card.imageUrls.firstOrNull()
+                                            if (firstImage != null) {
+                                                AsyncImage(
+                                                    model = firstImage,
+                                                    contentDescription = null,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier.matchParentSize()
+                                                )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier.matchParentSize(),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(
+                                                        painter = painterResource(id = R.drawable.ic_house),
+                                                        contentDescription = null,
+                                                        tint = LightGray,
+                                                        modifier = Modifier.size(24.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        if (scoreCriteria.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(24.dp))
-
-                            val scoreTotalByCard: Map<Long, Int> = cards.associate { card ->
-                                card.cardId to scoreCriteria.sumOf { c ->
-                                    scores.find { it.cardId == card.cardId && it.criteriaId == c.criteriaId }
-                                        ?.value?.toInt() ?: 0
-                                }
-                            }
-                            val scoreMaxTotal = scoreCriteria.size * 5
 
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 Box(
@@ -355,7 +269,7 @@ fun ComparisonResultScreen(
                                         .width(LeftColumnWidth)
                                 ) {
                                     Text(
-                                        text = "Критерии оценки",
+                                        text = "Чек-лист",
                                         style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                         color = Dark
                                     )
@@ -375,7 +289,7 @@ fun ComparisonResultScreen(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = "${scoreTotalByCard[card.cardId] ?: 0}/$scoreMaxTotal",
+                                                text = "${checkedTotalByCard[card.cardId] ?: 0}/${checklistCriteria.size}",
                                                 style = Typography.bodyMedium,
                                                 color = Gray
                                             )
@@ -386,7 +300,7 @@ fun ComparisonResultScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            scoreCriteria.forEachIndexed { rowIndex, c ->
+                            checklistCriteria.forEachIndexed { rowIndex, c ->
                                 if (rowIndex > 0) Spacer(modifier = Modifier.height(16.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -414,120 +328,222 @@ fun ComparisonResultScreen(
                                     ) {
                                         cards.forEachIndexed { index, card ->
                                             if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
-                                            val value = scores.find {
-                                                it.cardId == card.cardId && it.criteriaId == c.criteriaId
-                                            }?.value?.toInt() ?: 0
+                                            val checked = scores.any {
+                                                it.cardId == card.cardId &&
+                                                        it.criteriaId == c.criteriaId &&
+                                                        it.value == 1.0
+                                            }
                                             Box(
                                                 modifier = Modifier.width(ImageSize),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Text(
-                                                    text = value.toString(),
-                                                    style = Typography.bodyMedium,
-                                                    color = Dark
+                                                Icon(
+                                                    painter = painterResource(
+                                                        id = if (checked) R.drawable.ic_check_box
+                                                        else R.drawable.ic_closw
+                                                    ),
+                                                    contentDescription = null,
+                                                    tint = if (checked) Green else Red,
+                                                    modifier = Modifier.size(24.dp)
                                                 )
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                            if (scoreCriteria.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(24.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .padding(start = OuterPadding)
-                                    .width(LeftColumnWidth)
-                            ) {
-                                Text(
-                                    text = "Стоимость",
-                                    style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = Dark
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(GapBeforeImages))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clipToBounds()
-                                    .horizontalScroll(horizontalScroll)
-                                    .padding(end = OuterPadding),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                cards.forEachIndexed { index, card ->
-                                    if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                val scoreTotalByCard: Map<Long, Int> = cards.associate { card ->
+                                    card.cardId to scoreCriteria.sumOf { c ->
+                                        scores.find { it.cardId == card.cardId && it.criteriaId == c.criteriaId }
+                                            ?.value?.toInt() ?: 0
+                                    }
+                                }
+                                val scoreMaxTotal = scoreCriteria.size * 5
+
+                                Row(modifier = Modifier.fillMaxWidth()) {
                                     Box(
-                                        modifier = Modifier.width(ImageSize),
-                                        contentAlignment = Alignment.Center
+                                        modifier = Modifier
+                                            .padding(start = OuterPadding)
+                                            .width(LeftColumnWidth)
                                     ) {
-                                        val monthly = monthlyPriceByCard[card.cardId]
                                         Text(
-                                            text = monthly?.toInt()?.toString() ?: "—",
-                                            style = Typography.bodyMedium,
+                                            text = "Критерии оценки",
+                                            style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                             color = Dark
                                         )
                                     }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onGloballyPositioned { coords ->
-                                    val pos = coords.positionInRoot().y.toInt()
-                                    totalRowBottomY = pos + coords.size.height
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .padding(start = OuterPadding)
-                                    .width(LeftColumnWidth)
-                            ) {
-                                Text(
-                                    text = "Итог",
-                                    style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = Dark
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(GapBeforeImages))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clipToBounds()
-                                    .horizontalScroll(horizontalScroll)
-                                    .padding(end = OuterPadding),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                cards.forEachIndexed { index, card ->
-                                    if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
-                                    Box(
-                                        modifier = Modifier.width(ImageSize),
-                                        contentAlignment = Alignment.Center
+                                    Spacer(modifier = Modifier.width(GapBeforeImages))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clipToBounds()
+                                            .horizontalScroll(horizontalScroll)
+                                            .padding(end = OuterPadding)
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        cards.forEachIndexed { index, card ->
+                                            if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                            Box(
+                                                modifier = Modifier.width(ImageSize),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "${scoreTotalByCard[card.cardId] ?: 0}/$scoreMaxTotal",
+                                                    style = Typography.bodyMedium,
+                                                    color = Gray
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                scoreCriteria.forEachIndexed { rowIndex, c ->
+                                    if (rowIndex > 0) Spacer(modifier = Modifier.height(16.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(start = OuterPadding)
+                                                .width(LeftColumnWidth)
                                         ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.ic_star),
-                                                contentDescription = null,
-                                                tint = Blue,
-                                                modifier = Modifier.size(12.dp)
-                                            )
                                             Text(
-                                                text = String.format("%.1f", totalByCard[card.cardId] ?: 0.0),
+                                                text = c.name,
                                                 style = Typography.bodyMedium,
                                                 color = Dark
                                             )
+                                        }
+                                        Spacer(modifier = Modifier.width(GapBeforeImages))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clipToBounds()
+                                                .horizontalScroll(horizontalScroll)
+                                                .padding(end = OuterPadding),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            cards.forEachIndexed { index, card ->
+                                                if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                                val value = scores.find {
+                                                    it.cardId == card.cardId && it.criteriaId == c.criteriaId
+                                                }?.value?.toInt() ?: 0
+                                                Box(
+                                                    modifier = Modifier.width(ImageSize),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = value.toString(),
+                                                        style = Typography.bodyMedium,
+                                                        color = Dark
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(start = OuterPadding)
+                                        .width(LeftColumnWidth)
+                                ) {
+                                    Text(
+                                        text = "Стоимость",
+                                        style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Dark
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(GapBeforeImages))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clipToBounds()
+                                        .horizontalScroll(horizontalScroll)
+                                        .padding(end = OuterPadding),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    cards.forEachIndexed { index, card ->
+                                        if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                        Box(
+                                            modifier = Modifier.width(ImageSize),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            val monthly = monthlyPriceByCard[card.cardId]
+                                            Text(
+                                                text = monthly?.toInt()?.toString() ?: "—",
+                                                style = Typography.bodyMedium,
+                                                color = Dark
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onGloballyPositioned { coords ->
+                                        val pos = coords.positionInRoot().y.toInt()
+                                        totalRowBottomY = pos + coords.size.height
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(start = OuterPadding)
+                                        .width(LeftColumnWidth)
+                                ) {
+                                    Text(
+                                        text = "Итог",
+                                        style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = Dark
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(GapBeforeImages))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clipToBounds()
+                                        .horizontalScroll(horizontalScroll)
+                                        .padding(end = OuterPadding),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    cards.forEachIndexed { index, card ->
+                                        if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                        Box(
+                                            modifier = Modifier.width(ImageSize),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.ic_star),
+                                                    contentDescription = null,
+                                                    tint = Blue,
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                                Text(
+                                                    text = String.format("%.1f", totalByCard[card.cardId] ?: 0.0),
+                                                    style = Typography.bodyMedium,
+                                                    color = Dark
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -549,5 +565,64 @@ fun ComparisonResultScreen(
             },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
+    }
+}
+
+@Composable
+private fun ResultShimmer(cardsCount: Int) {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(LightBlue, Color(0xFFD8E0EE), LightBlue),
+        start = Offset(translateAnim - 200f, 0f),
+        end = Offset(translateAnim, 0f)
+    )
+
+    val count = cardsCount.coerceAtLeast(2)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 80.dp)
+    ) {
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        repeat(8) { rowIndex ->
+            if (rowIndex > 0) Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = OuterPadding)
+                        .width(LeftColumnWidth - 40.dp)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(shimmerBrush)
+                )
+                Spacer(modifier = Modifier.width(GapBeforeImages))
+                Row(horizontalArrangement = Arrangement.spacedBy(ImageSpacing)) {
+                    repeat(count) {
+                        Box(
+                            modifier = Modifier
+                                .width(ImageSize)
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(shimmerBrush)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
