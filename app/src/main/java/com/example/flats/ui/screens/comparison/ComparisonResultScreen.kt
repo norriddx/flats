@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -37,6 +38,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.flats.R
@@ -48,7 +50,6 @@ import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
-import com.example.flats.ui.theme.BodyLargeBold
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.Green
@@ -182,7 +183,7 @@ fun ComparisonResultScreen(
                         ) {
                             Text(
                                 text = "Чек-лист",
-                                style = BodyLargeBold,
+                                style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                 color = Dark
                             )
                         }
@@ -259,6 +260,146 @@ fun ComparisonResultScreen(
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+
+                    val scoreCriteria = criteria.filter { it.type == "score" }
+
+                    if (scoreCriteria.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        val scoreTotalByCard: Map<Long, Int> = cards.associate { card ->
+                            card.cardId to scoreCriteria.sumOf { c ->
+                                scores.find { it.cardId == card.cardId && it.criteriaId == c.criteriaId }
+                                    ?.value?.toInt() ?: 0
+                            }
+                        }
+                        val scoreMaxTotal = scoreCriteria.size * 5
+
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(start = OuterPadding)
+                                    .width(LeftColumnWidth)
+                            ) {
+                                Text(
+                                    text = "Критерии оценки",
+                                    style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Dark
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(GapBeforeImages))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clipToBounds()
+                                    .horizontalScroll(horizontalScroll)
+                                    .padding(end = OuterPadding)
+                            ) {
+                                cards.forEachIndexed { index, card ->
+                                    if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                    Box(
+                                        modifier = Modifier.width(ImageSize),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "${scoreTotalByCard[card.cardId] ?: 0}/$scoreMaxTotal",
+                                            style = Typography.bodyMedium,
+                                            color = Gray
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        scoreCriteria.forEachIndexed { rowIndex, c ->
+                            if (rowIndex > 0) Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(start = OuterPadding)
+                                        .width(LeftColumnWidth)
+                                ) {
+                                    Text(
+                                        text = c.name,
+                                        style = Typography.bodyMedium,
+                                        color = Dark
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(GapBeforeImages))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clipToBounds()
+                                        .horizontalScroll(horizontalScroll)
+                                        .padding(end = OuterPadding),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    cards.forEachIndexed { index, card ->
+                                        if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                        val value = scores.find {
+                                            it.cardId == card.cardId && it.criteriaId == c.criteriaId
+                                        }?.value?.toInt() ?: 0
+                                        Box(
+                                            modifier = Modifier.width(ImageSize),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = value.toString(),
+                                                style = Typography.bodyMedium,
+                                                color = Dark
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = OuterPadding)
+                                .width(LeftColumnWidth)
+                        ) {
+                            Text(
+                                text = "Стоимость",
+                                style = Typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Dark
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(GapBeforeImages))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clipToBounds()
+                                .horizontalScroll(horizontalScroll)
+                                .padding(end = OuterPadding),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            cards.forEachIndexed { index, card ->
+                                if (index > 0) Spacer(modifier = Modifier.width(ImageSpacing))
+                                Box(
+                                    modifier = Modifier.width(ImageSize),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = card.price?.toInt()?.toString() ?: "—",
+                                        style = Typography.bodyMedium,
+                                        color = Dark
+                                    )
                                 }
                             }
                         }
