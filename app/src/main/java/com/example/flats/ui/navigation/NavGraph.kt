@@ -31,6 +31,7 @@ import com.example.flats.ui.screens.cards.CreateCardScreen
 import com.example.flats.ui.screens.cards.FavouritesScreen
 import com.example.flats.ui.screens.cards.ViewCardScreen
 import com.example.flats.ui.screens.comparison.CardSelectionScreen
+import com.example.flats.ui.screens.comparison.ComparisonResultScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import com.example.flats.ui.screens.onboarding.OnboardingScreen
 import io.github.jan.supabase.auth.auth
@@ -167,6 +168,23 @@ fun NavGraph(navController: NavHostController) {
                 selectedIds = comparisonSelectedIds,
                 onSelectedIdsChange = { comparisonSelectedIds = it },
                 onNavigateToSelection = { navController.navigate(Routes.CARD_SELECTION) },
+                onNavigateToResult = { navController.navigate(Routes.COMPARISON_RESULT) },
+                onNavigateToCards = {
+                    navController.popBackStack(Routes.CARDS, inclusive = false)
+                }
+            )
+        }
+
+        composable(Routes.COMPARISON_RESULT) {
+            ComparisonResultScreen(
+                selectedIds = comparisonSelectedIds,
+                onBack = {
+                    comparisonSelectedIds = emptyList()
+                    navController.popBackStack()
+                },
+                onNavigateToViewCard = { cardId ->
+                    navController.navigate(Routes.viewCard(cardId))
+                },
                 onNavigateToCards = {
                     navController.popBackStack(Routes.CARDS, inclusive = false)
                 }

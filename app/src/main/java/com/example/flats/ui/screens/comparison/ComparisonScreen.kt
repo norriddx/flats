@@ -57,6 +57,7 @@ fun ComparisonScreen(
     selectedIds: List<Long>,
     onSelectedIdsChange: (List<Long>) -> Unit,
     onNavigateToSelection: () -> Unit,
+    onNavigateToResult: () -> Unit,
     onNavigateToCards: () -> Unit
 ) {
     var loadedCards by remember { mutableStateOf<List<Card>>(emptyList()) }
@@ -150,7 +151,7 @@ fun ComparisonScreen(
                 Box(modifier = Modifier.width(256.dp)) {
                     Button(
                         text = "Сравнить",
-                        onClick = { /* TODO: run comparison */ },
+                        onClick = { onNavigateToResult() },
                         enabled = canCompare
                     )
                 }
