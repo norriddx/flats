@@ -13,6 +13,7 @@ object Routes {
     const val FAVOURITES      = "favourites"
     const val ARCHIVE         = "archive"
     const val SETTINGS = "settings"
+    const val ACCOUNT = "account"
 
     fun viewCard(cardId: Long) = "view_card/$cardId"
     fun editCard(cardId: Long) = "edit_card/$cardId"

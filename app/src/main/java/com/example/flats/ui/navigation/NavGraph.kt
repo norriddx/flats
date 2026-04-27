@@ -38,6 +38,7 @@ import com.example.flats.ui.screens.comparison.CardSelectionScreen
 import com.example.flats.ui.screens.comparison.ComparisonResultScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import com.example.flats.ui.screens.onboarding.OnboardingScreen
+import com.example.flats.ui.screens.settings.AccountScreen
 import com.example.flats.ui.screens.settings.SettingsScreen
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -217,8 +218,13 @@ fun NavGraph(navController: NavHostController) {
                         navController.navigate(Routes.AUTH) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    onNavigateToAccount = { navController.navigate(Routes.ACCOUNT) }
                 )
+            }
+
+            composable(Routes.ACCOUNT) {
+                AccountScreen(onBack = { navController.popBackStack() })
             }
         }
 

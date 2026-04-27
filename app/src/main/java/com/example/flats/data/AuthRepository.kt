@@ -68,6 +68,22 @@ object AuthRepository {
         SupabaseClient.client.postgrest.rpc("delete_account")
     }
 
+    suspend fun getCurrentUser(): User {
+        val uid = currentUserId() ?: throw Exception("Не авторизован")
+        return client.postgrest.from("user")
+            .select { filter { eq("user_id", uid) } }
+            .decodeSingle<User>()
+    }
+
+    suspend fun updateUsername(username: String) {
+        val uid = currentUserId() ?: throw Exception("Не авторизован")
+        client.postgrest.from("user").update({
+            set("username", username)
+        }) {
+            filter { eq("user_id", uid) }
+        }
+    }
+
     fun currentUserId(): String? {
         return client.auth.currentUserOrNull()?.id
     }
