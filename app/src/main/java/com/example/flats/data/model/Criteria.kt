@@ -10,5 +10,5 @@ data class Criteria(
     val name: String = "",
     val weight: Double = 1.0,
     @SerialName("is_active") val isActive: Boolean = true,
-    val type: String = "score"
+    val type: String
 )
