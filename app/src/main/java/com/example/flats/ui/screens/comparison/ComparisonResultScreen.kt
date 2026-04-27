@@ -61,6 +61,7 @@ import com.example.flats.data.model.CardCriteriaScore
 import com.example.flats.data.model.Criteria
 import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
+import com.example.flats.ui.components.NotificationSheet
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
 import com.example.flats.ui.theme.Blue
@@ -152,6 +153,7 @@ fun ComparisonResultScreen(
 
     var contentTopY by remember { mutableStateOf(0) }
     var totalRowBottomY by remember { mutableStateOf(0) }
+    var showInfoSheet by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -166,7 +168,7 @@ fun ComparisonResultScreen(
             TopBar(
                 title = "Сравнить",
                 actions = listOf(
-                    TopBarAction(R.drawable.ic_info) { /* TODO */ },
+                    TopBarAction(R.drawable.ic_info) { showInfoSheet = true },
                     TopBarAction(R.drawable.ic_reset) { onBack() }
                 )
             )
@@ -565,6 +567,16 @@ fun ComparisonResultScreen(
             },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
+
+        if (showInfoSheet) {
+            NotificationSheet(
+                title = "Почему такой результат?",
+                text = "Ранжирование рассчитывается на основе заполненных критериев. Каждый критерий имеет вес — чем он выше, тем сильнее влияет на итоговую позицию. Сравниваются только объекты с одинаковым набором критериев: если критерий отсутствует хотя бы в одной карточке, он исключается из расчета для всех.",
+                buttonText = "Понятно",
+                onButtonClick = { showInfoSheet = false },
+                onDismiss = { showInfoSheet = false }
+            )
+        }
     }
 }
 

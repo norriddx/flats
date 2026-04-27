@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import com.example.flats.R
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Typography
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +38,15 @@ fun NotificationSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
+    fun hideThen(action: () -> Unit) {
+        scope.launch {
+            sheetState.hide()
+        }.invokeOnCompletion {
+            if (!sheetState.isVisible) action()
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -58,7 +69,7 @@ fun NotificationSheet(
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_closw),
+                    painter = painterResource(id = R.drawable.ic_close),
                     contentDescription = null,
                     tint = Dark,
                     modifier = Modifier
@@ -66,7 +77,7 @@ fun NotificationSheet(
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
-                        ) { onDismiss() }
+                        ) { hideThen(onDismiss) }
                 )
             }
 
@@ -82,7 +93,7 @@ fun NotificationSheet(
 
             Button(
                 text = buttonText,
-                onClick = onButtonClick
+                onClick = { hideThen(onButtonClick) }
             )
         }
     }
