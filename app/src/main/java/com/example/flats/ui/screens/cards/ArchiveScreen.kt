@@ -1,5 +1,6 @@
 package com.example.flats.ui.screens.cards
 
+import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -20,9 +21,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,17 +38,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import android.widget.Toast
 import com.example.flats.R
 import com.example.flats.data.CardRepository
 import com.example.flats.data.model.Card
 import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.components.CardItem
+import com.example.flats.ui.components.NotificationSheet
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.components.TopBarAction
-import com.example.flats.ui.theme.Blue
-import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.LightBlue
 import com.example.flats.ui.theme.Typography
@@ -226,54 +223,27 @@ fun ArchiveScreen(
         )
 
         if (showClearConfirm) {
-            AlertDialog(
-                onDismissRequest = { if (!isClearing) showClearConfirm = false },
-                containerColor = Color.White,
-                title = {
-                    Text(
-                        text = "Очистить архив?",
-                        style = Typography.headlineSmall,
-                        color = Dark
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Все карточки в архиве будут удалены безвозвратно.",
-                        style = Typography.bodyLarge,
-                        color = Dark
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            if (isClearing) return@TextButton
-                            isClearing = true
-                            scope.launch {
-                                try {
-                                    CardRepository.clearArchive()
-                                    cards = emptyList()
-                                    showClearConfirm = false
-                                } catch (e: kotlinx.coroutines.CancellationException) {
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, e.message ?: "Ошибка", Toast.LENGTH_SHORT).show()
-                                } finally {
-                                    isClearing = false
-                                }
-                            }
-                        },
-                        enabled = !isClearing
-                    ) {
-                        Text(text = "Очистить", color = Blue, style = Typography.bodyLarge)
+            NotificationSheet(
+                title = "Очистить архив?",
+                text = "Все карточки в архиве будут удалены безвозвратно.",
+                buttonText = "Очистить",
+                onButtonClick = {
+                    if (isClearing) return@NotificationSheet
+                    isClearing = true
+                    scope.launch {
+                        try {
+                            CardRepository.clearArchive()
+                            cards = emptyList()
+                            showClearConfirm = false
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                        } catch (e: Exception) {
+                            Toast.makeText(context, e.message ?: "Ошибка", Toast.LENGTH_SHORT).show()
+                        } finally {
+                            isClearing = false
+                        }
                     }
                 },
-                dismissButton = {
-                    TextButton(
-                        onClick = { if (!isClearing) showClearConfirm = false },
-                        enabled = !isClearing
-                    ) {
-                        Text(text = "Отмена", color = Gray, style = Typography.bodyLarge)
-                    }
-                }
+                onDismiss = { if (!isClearing) showClearConfirm = false }
             )
         }
     }
