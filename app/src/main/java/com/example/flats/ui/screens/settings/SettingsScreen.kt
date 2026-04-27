@@ -47,6 +47,7 @@ import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Red
 import com.example.flats.ui.theme.Typography
 import androidx.core.net.toUri
+import com.example.flats.data.AuthRepository
 import com.example.flats.data.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
@@ -59,6 +60,7 @@ fun SettingsScreen(
     var showResetSheet by remember { mutableStateOf(false) }
     var showLogoutSheet by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var showDeleteSheet by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -102,7 +104,7 @@ fun SettingsScreen(
                 iconRes = R.drawable.ic_bin,
                 text = "Удалить аккаунт",
                 color = Red,
-                onClick = { /* TODO */ }
+                onClick = { showDeleteSheet = true }
             )
         }
 
@@ -131,6 +133,25 @@ fun SettingsScreen(
                     }
                 },
                 onDismiss = { showLogoutSheet = false }
+            )
+        }
+
+        if (showDeleteSheet) {
+            NotificationSheet(
+                title = "Удаление аккаунта",
+                text = "Удалить аккаунт? Все данные будут утеряны.",
+                buttonText = "Удалить",
+                onButtonClick = {
+                    showDeleteSheet = false
+                    scope.launch {
+                        try {
+                            AuthRepository.deleteAccount()
+                            SupabaseClient.client.auth.signOut()
+                        } catch (_: Exception) {}
+                        onLogout()
+                    }
+                },
+                onDismiss = { showDeleteSheet = false }
             )
         }
     }

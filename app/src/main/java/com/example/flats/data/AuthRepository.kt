@@ -64,6 +64,10 @@ object AuthRepository {
         client.auth.signOut()
     }
 
+    suspend fun deleteAccount() {
+        SupabaseClient.client.postgrest.rpc("delete_account")
+    }
+
     fun currentUserId(): String? {
         return client.auth.currentUserOrNull()?.id
     }
