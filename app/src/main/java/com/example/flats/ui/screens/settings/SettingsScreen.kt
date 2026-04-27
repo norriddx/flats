@@ -1,5 +1,7 @@
 package com.example.flats.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -30,17 +32,34 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.flats.R
+import com.example.flats.ui.components.NotificationSheet
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Red
 import com.example.flats.ui.theme.Typography
+import androidx.core.net.toUri
+import com.example.flats.data.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    onLogout: () -> Unit
+) {
+    val context = LocalContext.current
+    var showResetSheet by remember { mutableStateOf(false) }
+    var showLogoutSheet by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -59,9 +78,16 @@ fun SettingsScreen() {
             Spacer(modifier = Modifier.height(16.dp))
             SettingsRow(text = "Критерии оценки", onClick = { /* TODO */ })
             Spacer(modifier = Modifier.height(16.dp))
-            SettingsRow(text = "Сброс весов критериев", onClick = { /* TODO */ })
+            SettingsRow(text = "Сброс весов критериев", onClick = { showResetSheet = true })
             Spacer(modifier = Modifier.height(16.dp))
-            SettingsRow(text = "Связь с поддержкой", onClick = { /* TODO */ })
+            SettingsRow(text = "Связь с поддержкой", onClick = {
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = "mailto:norriddx@gmail.com".toUri()
+                }
+                try {
+                    context.startActivity(intent)
+                } catch (_: Exception) {}
+            })
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -69,7 +95,7 @@ fun SettingsScreen() {
                 iconRes = R.drawable.ic_exit,
                 text = "Выйти из аккаунта",
                 color = Dark,
-                onClick = { /* TODO */ }
+                onClick = { showLogoutSheet = true }
             )
             Spacer(modifier = Modifier.height(16.dp))
             SettingsActionRow(
@@ -77,6 +103,34 @@ fun SettingsScreen() {
                 text = "Удалить аккаунт",
                 color = Red,
                 onClick = { /* TODO */ }
+            )
+        }
+
+        if (showResetSheet) {
+            NotificationSheet(
+                title = "Сброс весов критериев",
+                text = "Сбросить веса критериев? Все критерии получат одинаковый вес — каждый будет влиять на результат сравнения равнозначно. Используй, если накопленные веса исказили картину или хочешь обнулить их влияние.",
+                buttonText = "Сбросить",
+                onButtonClick = { showResetSheet = false },
+                onDismiss = { showResetSheet = false }
+            )
+        }
+
+        if (showLogoutSheet) {
+            NotificationSheet(
+                title = "Выход из аккаунта",
+                text = "Выйти из аккаунта? Все несинхронизированные данные могут быть утеряны.",
+                buttonText = "Выйти",
+                onButtonClick = {
+                    showLogoutSheet = false
+                    scope.launch {
+                        try {
+                            SupabaseClient.client.auth.signOut()
+                        } catch (_: Exception) {}
+                        onLogout()
+                    }
+                },
+                onDismiss = { showLogoutSheet = false }
             )
         }
     }

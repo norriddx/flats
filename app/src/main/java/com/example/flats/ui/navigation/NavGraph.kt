@@ -212,7 +212,13 @@ fun NavGraph(navController: NavHostController) {
             }
 
             composable(Routes.SETTINGS) {
-                SettingsScreen()
+                SettingsScreen(
+                    onLogout = {
+                        navController.navigate(Routes.AUTH) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
         }
 
