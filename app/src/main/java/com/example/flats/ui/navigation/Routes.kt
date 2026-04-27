@@ -12,6 +12,7 @@ object Routes {
     const val COMPARISON_RESULT = "comparison_result"
     const val FAVOURITES      = "favourites"
     const val ARCHIVE         = "archive"
+    const val SETTINGS = "settings"
 
     fun viewCard(cardId: Long) = "view_card/$cardId"
     fun editCard(cardId: Long) = "edit_card/$cardId"

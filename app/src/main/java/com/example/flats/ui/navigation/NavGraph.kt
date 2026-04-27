@@ -34,6 +34,7 @@ import com.example.flats.ui.screens.comparison.CardSelectionScreen
 import com.example.flats.ui.screens.comparison.ComparisonResultScreen
 import com.example.flats.ui.screens.comparison.ComparisonScreen
 import com.example.flats.ui.screens.onboarding.OnboardingScreen
+import com.example.flats.ui.screens.settings.SettingsScreen
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
 
@@ -97,6 +98,7 @@ fun NavGraph(navController: NavHostController) {
         composable(Routes.CARDS) {
             CardsScreen(
                 onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
+                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
                 onNavigateToCreateCard = { navController.navigate(Routes.CREATE_CARD) },
                 onNavigateToViewCard = { cardId ->
                     navController.navigate(Routes.viewCard(cardId))
@@ -171,7 +173,8 @@ fun NavGraph(navController: NavHostController) {
                 onNavigateToResult = { navController.navigate(Routes.COMPARISON_RESULT) },
                 onNavigateToCards = {
                     navController.popBackStack(Routes.CARDS, inclusive = false)
-                }
+                },
+                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) }
             )
         }
 
@@ -187,7 +190,8 @@ fun NavGraph(navController: NavHostController) {
                 },
                 onNavigateToCards = {
                     navController.popBackStack(Routes.CARDS, inclusive = false)
-                }
+                },
+                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) }
             )
         }
 
@@ -198,6 +202,17 @@ fun NavGraph(navController: NavHostController) {
                 onSave = { ids ->
                     comparisonSelectedIds = ids
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                onNavigateToCards = {
+                    navController.popBackStack(Routes.CARDS, inclusive = false)
+                },
+                onNavigateToComparison = {
+                    navController.navigate(Routes.COMPARISON)
                 }
             )
         }

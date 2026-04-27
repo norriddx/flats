@@ -58,7 +58,8 @@ fun ComparisonScreen(
     onSelectedIdsChange: (List<Long>) -> Unit,
     onNavigateToSelection: () -> Unit,
     onNavigateToResult: () -> Unit,
-    onNavigateToCards: () -> Unit
+    onNavigateToCards: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     var loadedCards by remember { mutableStateOf<List<Card>>(emptyList()) }
 
@@ -163,7 +164,7 @@ fun ComparisonScreen(
             onItemClick = { route ->
                 when (route) {
                     BottomNavItem.Home.route -> onNavigateToCards()
-                    BottomNavItem.Settings.route -> { /* TODO */ }
+                    BottomNavItem.Settings.route -> onNavigateToSettings()
                 }
             },
             modifier = Modifier.align(Alignment.BottomCenter)

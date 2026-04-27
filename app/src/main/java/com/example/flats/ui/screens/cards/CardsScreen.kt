@@ -127,6 +127,7 @@ private fun ShimmerCardItem(brush: Brush) {
 @Composable
 fun CardsScreen(
     onNavigateToComparison: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToCreateCard: () -> Unit,
     onNavigateToViewCard: (Long) -> Unit,
     onNavigateToFavourites: () -> Unit,
@@ -433,7 +434,7 @@ fun CardsScreen(
             onItemClick = { route ->
                 when (route) {
                     BottomNavItem.Comparison.route -> onNavigateToComparison()
-                    BottomNavItem.Settings.route -> { /* TODO */ }
+                    BottomNavItem.Settings.route -> onNavigateToSettings()
                 }
             },
             modifier = Modifier
