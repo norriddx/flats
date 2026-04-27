@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -21,9 +22,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.flats.data.OnboardingPreferences
 import com.example.flats.data.SupabaseClient
+import com.example.flats.ui.components.BottomBar
+import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.screens.auth.AuthScreen
 import com.example.flats.ui.screens.cards.ArchiveScreen
 import com.example.flats.ui.screens.cards.CardsScreen
@@ -67,153 +71,163 @@ fun NavGraph(navController: NavHostController) {
         return
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = destination,
-        enterTransition = { fadeIn(animationSpec = tween(150)) },
-        exitTransition = { fadeOut(animationSpec = tween(150)) },
-        popEnterTransition = { fadeIn(animationSpec = tween(150)) },
-        popExitTransition = { fadeOut(animationSpec = tween(150)) }
-    ) {
-        composable(Routes.ONBOARDING) {
-            OnboardingScreen(
-                onFinish = {
-                    navController.navigate(Routes.AUTH) {
-                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
+    val activeTab: String? = when (currentRoute) {
+        Routes.CARDS -> BottomNavItem.Home.route
+        Routes.COMPARISON, Routes.COMPARISON_RESULT -> BottomNavItem.Comparison.route
+        Routes.SETTINGS -> BottomNavItem.Settings.route
+        else -> null
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = destination,
+            enterTransition = { fadeIn(animationSpec = tween(150)) },
+            exitTransition = { fadeOut(animationSpec = tween(150)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(150)) },
+            popExitTransition = { fadeOut(animationSpec = tween(150)) }
+        ) {
+            composable(Routes.ONBOARDING) {
+                OnboardingScreen(
+                    onFinish = {
+                        navController.navigate(Routes.AUTH) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
 
-        composable(Routes.AUTH) {
-            AuthScreen(
-                onAuthSuccess = {
-                    navController.navigate(Routes.CARDS) {
-                        popUpTo(Routes.AUTH) { inclusive = true }
+            composable(Routes.AUTH) {
+                AuthScreen(
+                    onAuthSuccess = {
+                        navController.navigate(Routes.CARDS) {
+                            popUpTo(Routes.AUTH) { inclusive = true }
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
 
-        composable(Routes.CARDS) {
-            CardsScreen(
-                onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
-                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
-                onNavigateToCreateCard = { navController.navigate(Routes.CREATE_CARD) },
-                onNavigateToViewCard = { cardId ->
-                    navController.navigate(Routes.viewCard(cardId))
-                },
-                onNavigateToFavourites = { navController.navigate(Routes.FAVOURITES) },
-                onNavigateToArchive = { navController.navigate(Routes.ARCHIVE) },
-                onLogout = {
-                    navController.navigate(Routes.AUTH) {
-                        popUpTo(0) { inclusive = true }
+            composable(Routes.CARDS) {
+                CardsScreen(
+                    onNavigateToCreateCard = { navController.navigate(Routes.CREATE_CARD) },
+                    onNavigateToViewCard = { cardId ->
+                        navController.navigate(Routes.viewCard(cardId))
+                    },
+                    onNavigateToFavourites = { navController.navigate(Routes.FAVOURITES) },
+                    onNavigateToArchive = { navController.navigate(Routes.ARCHIVE) },
+                    onLogout = {
+                        navController.navigate(Routes.AUTH) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
-                }
-            )
+                )
+            }
+
+            composable(Routes.CREATE_CARD) {
+                CreateCardScreen(
+                    cardId = null,
+                    onBack = { navController.popBackStack() },
+                    onDelete = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Routes.EDIT_CARD,
+                arguments = listOf(navArgument("cardId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getLong("cardId") ?: 0L
+                CreateCardScreen(
+                    cardId = cardId,
+                    onBack = { navController.popBackStack() },
+                    onDelete = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Routes.VIEW_CARD,
+                arguments = listOf(navArgument("cardId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getLong("cardId") ?: 0L
+                ViewCardScreen(
+                    cardId = cardId,
+                    onBack = { navController.popBackStack() },
+                    onEdit = { navController.navigate(Routes.editCard(cardId)) }
+                )
+            }
+
+            composable(Routes.FAVOURITES) {
+                FavouritesScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
+                    onNavigateToViewCard = { cardId ->
+                        navController.navigate(Routes.viewCard(cardId))
+                    }
+                )
+            }
+
+            composable(Routes.ARCHIVE) {
+                ArchiveScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
+                    onNavigateToViewCard = { cardId ->
+                        navController.navigate(Routes.viewCard(cardId))
+                    }
+                )
+            }
+
+            composable(Routes.COMPARISON) {
+                ComparisonScreen(
+                    selectedIds = comparisonSelectedIds,
+                    onSelectedIdsChange = { comparisonSelectedIds = it },
+                    onNavigateToSelection = { navController.navigate(Routes.CARD_SELECTION) },
+                    onNavigateToResult = { navController.navigate(Routes.COMPARISON_RESULT) }
+                )
+            }
+
+            composable(Routes.COMPARISON_RESULT) {
+                ComparisonResultScreen(
+                    selectedIds = comparisonSelectedIds,
+                    onBack = {
+                        comparisonSelectedIds = emptyList()
+                        navController.popBackStack()
+                    },
+                    onNavigateToViewCard = { cardId ->
+                        navController.navigate(Routes.viewCard(cardId))
+                    }
+                )
+            }
+
+            composable(Routes.CARD_SELECTION) {
+                CardSelectionScreen(
+                    initialSelectedIds = comparisonSelectedIds,
+                    onBack = { navController.popBackStack() },
+                    onSave = { ids ->
+                        comparisonSelectedIds = ids
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(Routes.SETTINGS) {
+                SettingsScreen()
+            }
         }
 
-        composable(Routes.CREATE_CARD) {
-            CreateCardScreen(
-                cardId = null,
-                onBack = { navController.popBackStack() },
-                onDelete = { navController.popBackStack() }
-            )
-        }
-
-        composable(
-            route = Routes.EDIT_CARD,
-            arguments = listOf(navArgument("cardId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val cardId = backStackEntry.arguments?.getLong("cardId") ?: 0L
-            CreateCardScreen(
-                cardId = cardId,
-                onBack = { navController.popBackStack() },
-                onDelete = { navController.popBackStack() }
-            )
-        }
-
-        composable(
-            route = Routes.VIEW_CARD,
-            arguments = listOf(navArgument("cardId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val cardId = backStackEntry.arguments?.getLong("cardId") ?: 0L
-            ViewCardScreen(
-                cardId = cardId,
-                onBack = { navController.popBackStack() },
-                onEdit = { navController.navigate(Routes.editCard(cardId)) }
-            )
-        }
-
-        composable(Routes.FAVOURITES) {
-            FavouritesScreen(
-                onBack = { navController.popBackStack() },
-                onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
-                onNavigateToViewCard = { cardId ->
-                    navController.navigate(Routes.viewCard(cardId))
-                }
-            )
-        }
-
-        composable(Routes.ARCHIVE) {
-            ArchiveScreen(
-                onBack = { navController.popBackStack() },
-                onNavigateToComparison = { navController.navigate(Routes.COMPARISON) },
-                onNavigateToViewCard = { cardId ->
-                    navController.navigate(Routes.viewCard(cardId))
-                }
-            )
-        }
-
-        composable(Routes.COMPARISON) {
-            ComparisonScreen(
-                selectedIds = comparisonSelectedIds,
-                onSelectedIdsChange = { comparisonSelectedIds = it },
-                onNavigateToSelection = { navController.navigate(Routes.CARD_SELECTION) },
-                onNavigateToResult = { navController.navigate(Routes.COMPARISON_RESULT) },
-                onNavigateToCards = {
-                    navController.popBackStack(Routes.CARDS, inclusive = false)
+        if (activeTab != null) {
+            BottomBar(
+                currentRoute = activeTab,
+                onItemClick = { route ->
+                    if (route != currentRoute) {
+                        navController.navigate(route) {
+                            popUpTo(Routes.CARDS) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
                 },
-                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) }
-            )
-        }
-
-        composable(Routes.COMPARISON_RESULT) {
-            ComparisonResultScreen(
-                selectedIds = comparisonSelectedIds,
-                onBack = {
-                    comparisonSelectedIds = emptyList()
-                    navController.popBackStack()
-                },
-                onNavigateToViewCard = { cardId ->
-                    navController.navigate(Routes.viewCard(cardId))
-                },
-                onNavigateToCards = {
-                    navController.popBackStack(Routes.CARDS, inclusive = false)
-                },
-                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) }
-            )
-        }
-
-        composable(Routes.CARD_SELECTION) {
-            CardSelectionScreen(
-                initialSelectedIds = comparisonSelectedIds,
-                onBack = { navController.popBackStack() },
-                onSave = { ids ->
-                    comparisonSelectedIds = ids
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onNavigateToCards = {
-                    navController.popBackStack(Routes.CARDS, inclusive = false)
-                },
-                onNavigateToComparison = {
-                    navController.navigate(Routes.COMPARISON)
-                }
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }

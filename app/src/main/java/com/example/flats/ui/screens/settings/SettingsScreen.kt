@@ -8,18 +8,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.example.flats.ui.components.BottomBar
-import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.components.TopBar
 
 @Composable
-fun SettingsScreen(
-    onNavigateToCards: () -> Unit,
-    onNavigateToComparison: () -> Unit
-) {
+fun SettingsScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -32,16 +26,5 @@ fun SettingsScreen(
         ) {
             TopBar(title = "Настройки")
         }
-
-        BottomBar(
-            currentRoute = BottomNavItem.Settings.route,
-            onItemClick = { route ->
-                when (route) {
-                    BottomNavItem.Home.route -> onNavigateToCards()
-                    BottomNavItem.Comparison.route -> onNavigateToComparison()
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
     }
 }

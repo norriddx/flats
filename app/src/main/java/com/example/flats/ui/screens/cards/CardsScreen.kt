@@ -126,8 +126,6 @@ private fun ShimmerCardItem(brush: Brush) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CardsScreen(
-    onNavigateToComparison: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onNavigateToCreateCard: () -> Unit,
     onNavigateToViewCard: (Long) -> Unit,
     onNavigateToFavourites: () -> Unit,
@@ -427,18 +425,6 @@ fun CardsScreen(
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 100.dp)
                 .windowInsetsPadding(WindowInsets.navigationBars)
-        )
-
-        BottomBar(
-            currentRoute = BottomNavItem.Home.route,
-            onItemClick = { route ->
-                when (route) {
-                    BottomNavItem.Comparison.route -> onNavigateToComparison()
-                    BottomNavItem.Settings.route -> onNavigateToSettings()
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
         )
 
         if (showFilterSheet) {

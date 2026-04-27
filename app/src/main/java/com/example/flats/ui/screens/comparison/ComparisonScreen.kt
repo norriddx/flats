@@ -57,9 +57,7 @@ fun ComparisonScreen(
     selectedIds: List<Long>,
     onSelectedIdsChange: (List<Long>) -> Unit,
     onNavigateToSelection: () -> Unit,
-    onNavigateToResult: () -> Unit,
-    onNavigateToCards: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToResult: () -> Unit
 ) {
     var loadedCards by remember { mutableStateOf<List<Card>>(emptyList()) }
 
@@ -158,17 +156,6 @@ fun ComparisonScreen(
                 }
             }
         }
-
-        BottomBar(
-            currentRoute = BottomNavItem.Comparison.route,
-            onItemClick = { route ->
-                when (route) {
-                    BottomNavItem.Home.route -> onNavigateToCards()
-                    BottomNavItem.Settings.route -> onNavigateToSettings()
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
     }
 }
 
