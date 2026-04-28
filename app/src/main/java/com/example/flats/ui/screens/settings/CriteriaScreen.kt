@@ -50,6 +50,14 @@ import com.example.flats.ui.components.SecondaryButton
 import com.example.flats.ui.components.TopBar
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Typography
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.example.flats.ui.theme.LightBlue
 
 private fun Modifier.topShadow(
     height: Dp = 12.dp,
@@ -69,6 +77,77 @@ private fun Modifier.topShadow(
     }
 )
 
+private fun Modifier.bottomShadow(
+    height: Dp = 12.dp,
+    color: Color = Color(0x0A000000)
+): Modifier = this.then(
+    Modifier.drawBehind {
+        val shadowPx = height.toPx()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(color, Color.Transparent),
+                startY = size.height,
+                endY = size.height + shadowPx
+            ),
+            topLeft = Offset(0f, size.height),
+            size = size.copy(height = shadowPx)
+        )
+    }
+)
+
+@Composable
+private fun CriteriaShimmer() {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(LightBlue, Color(0xFFD8E0EE), LightBlue),
+        start = Offset(translateAnim - 200f, 0f),
+        end = Offset(translateAnim, 0f)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(0.dp))
+
+        repeat(2) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.3f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerBrush)
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(0.4f, 0.5f, 0.35f, 0.45f, 0.55f).forEach { fraction ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(shimmerBrush)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CriteriaScreen(
@@ -76,6 +155,7 @@ fun CriteriaScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     var isSaving by remember { mutableStateOf(false) }
     var hasChanges by remember { mutableStateOf(false) }
@@ -117,109 +197,121 @@ fun CriteriaScreen(
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .imePadding()
         ) {
-            TopBar(title = "Критерии оценки", onBack = onBack)
+            TopBar(
+                title = "Критерии оценки",
+                onBack = onBack,
+                modifier = if (scrollState.value > 0) Modifier.bottomShadow() else Modifier
+            )
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // checklist
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Чек-лист",
-                        style = Typography.headlineSmall,
-                        color = Dark,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_plus),
-                        contentDescription = null,
-                        tint = Dark,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { creatingChecklist = true }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    checklistItems.forEachIndexed { index, item ->
-                        CriteriaEditChip(
-                            value = item.second,
-                            onEdit = { editingIndex = index },
-                            onDelete = {
-                                checklistItems = checklistItems.toMutableList().also {
-                                    it.removeAt(index)
-                                }
-                                hasChanges = true
-                            }
-                        )
+            if (!isLoaded) {
+                Box(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.padding(top = 16.dp)) {
+                        CriteriaShimmer()
                     }
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // score
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+            } else {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 20.dp)
                 ) {
-                    Text(
-                        text = "Критерии оценки",
-                        style = Typography.headlineSmall,
-                        color = Dark,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_plus),
-                        contentDescription = null,
-                        tint = Dark,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { creatingScore = true }
-                    )
-                }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    scoreItems.forEachIndexed { index, item ->
-                        CriteriaEditChip(
-                            value = item.second,
-                            onEdit = { editingScoreIndex = index },
-                            onDelete = {
-                                scoreItems = scoreItems.toMutableList().also {
-                                    it.removeAt(index)
-                                }
-                                hasChanges = true
-                            }
+                    // checklist header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Чек-лист",
+                            style = Typography.headlineSmall,
+                            color = Dark,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_plus),
+                            contentDescription = null,
+                            tint = Dark,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { creatingChecklist = true }
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        checklistItems.forEachIndexed { index, item ->
+                            CriteriaEditChip(
+                                value = item.second,
+                                onEdit = { editingIndex = index },
+                                onDelete = {
+                                    checklistItems = checklistItems.toMutableList().also {
+                                        it.removeAt(index)
+                                    }
+                                    hasChanges = true
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // score
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Критерии оценки",
+                            style = Typography.headlineSmall,
+                            color = Dark,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_plus),
+                            contentDescription = null,
+                            tint = Dark,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { creatingScore = true }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        scoreItems.forEachIndexed { index, item ->
+                            CriteriaEditChip(
+                                value = item.second,
+                                onEdit = { editingScoreIndex = index },
+                                onDelete = {
+                                    scoreItems = scoreItems.toMutableList().also {
+                                        it.removeAt(index)
+                                    }
+                                    hasChanges = true
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
 
             // buttons
