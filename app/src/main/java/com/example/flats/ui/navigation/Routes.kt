@@ -14,6 +14,7 @@ object Routes {
     const val ARCHIVE         = "archive"
     const val SETTINGS = "settings"
     const val ACCOUNT = "account"
+    const val CRITERIA = "criteria"
 
     fun viewCard(cardId: Long) = "view_card/$cardId"
     fun editCard(cardId: Long) = "edit_card/$cardId"

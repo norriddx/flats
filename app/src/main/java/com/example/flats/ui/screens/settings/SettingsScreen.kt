@@ -55,7 +55,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     onLogout: () -> Unit,
-    onNavigateToAccount: () -> Unit
+    onNavigateToAccount: () -> Unit,
+    onNavigateToCriteria: () -> Unit
 ) {
     val context = LocalContext.current
     var showResetSheet by remember { mutableStateOf(false) }
@@ -79,7 +80,7 @@ fun SettingsScreen(
 
             SettingsRow(text = "Аккаунт", onClick = { onNavigateToAccount() })
             Spacer(modifier = Modifier.height(16.dp))
-            SettingsRow(text = "Критерии оценки", onClick = { /* TODO */ })
+            SettingsRow(text = "Критерии оценки", onClick = { onNavigateToCriteria() })
             Spacer(modifier = Modifier.height(16.dp))
             SettingsRow(text = "Сброс весов критериев", onClick = { showResetSheet = true })
             Spacer(modifier = Modifier.height(16.dp))
