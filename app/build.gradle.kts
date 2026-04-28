@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.compose.animation.core)
+    implementation(libs.androidx.room.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
