@@ -57,6 +57,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import com.example.flats.ui.components.NotificationSheet
 import com.example.flats.ui.theme.LightBlue
 
 private fun Modifier.topShadow(
@@ -169,6 +170,9 @@ fun CriteriaScreen(
     var editingScoreIndex by remember { mutableStateOf<Int?>(null) }
     var creatingScore by remember { mutableStateOf(false) }
 
+    var deletingChecklistIndex by remember { mutableStateOf<Int?>(null) }
+    var deletingScoreIndex by remember { mutableStateOf<Int?>(null) }
+
     LaunchedEffect(Unit) {
         try {
             val all = CardRepository.getCriteria()
@@ -218,7 +222,7 @@ fun CriteriaScreen(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // checklist header
+                    // checklist
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -253,12 +257,7 @@ fun CriteriaScreen(
                             CriteriaEditChip(
                                 value = item.second,
                                 onEdit = { editingIndex = index },
-                                onDelete = {
-                                    checklistItems = checklistItems.toMutableList().also {
-                                        it.removeAt(index)
-                                    }
-                                    hasChanges = true
-                                }
+                                onDelete = { deletingChecklistIndex = index }
                             )
                         }
                     }
@@ -300,12 +299,7 @@ fun CriteriaScreen(
                             CriteriaEditChip(
                                 value = item.second,
                                 onEdit = { editingScoreIndex = index },
-                                onDelete = {
-                                    scoreItems = scoreItems.toMutableList().also {
-                                        it.removeAt(index)
-                                    }
-                                    hasChanges = true
-                                }
+                                onDelete = { deletingScoreIndex = index }
                             )
                         }
                     }
@@ -400,6 +394,38 @@ fun CriteriaScreen(
                     creatingScore = false
                 },
                 onDismiss = { creatingScore = false }
+            )
+        }
+
+        deletingChecklistIndex?.let { index ->
+            NotificationSheet(
+                title = "Удаление критерия",
+                text = "Удалить критерий? Критерий скроется из интерфейса, но останется в базе — сохранятся его вес и оценки в старых карточках. Если создашь критерий с тем же названием, он восстановится с сохранёнными данными. Новые карточки не будут содержать этот критерий.",
+                buttonText = "Удалить",
+                onButtonClick = {
+                    checklistItems = checklistItems.toMutableList().also {
+                        it.removeAt(index)
+                    }
+                    hasChanges = true
+                    deletingChecklistIndex = null
+                },
+                onDismiss = { deletingChecklistIndex = null }
+            )
+        }
+
+        deletingScoreIndex?.let { index ->
+            NotificationSheet(
+                title = "Удаление критерия",
+                text = "Удалить критерий? Критерий скроется из интерфейса, но останется в базе — сохранятся его вес и оценки в старых карточках. Если создашь критерий с тем же названием, он восстановится с сохранёнными данными. Новые карточки не будут содержать этот критерий.",
+                buttonText = "Удалить",
+                onButtonClick = {
+                    scoreItems = scoreItems.toMutableList().also {
+                        it.removeAt(index)
+                    }
+                    hasChanges = true
+                    deletingScoreIndex = null
+                },
+                onDismiss = { deletingScoreIndex = null }
             )
         }
     }
