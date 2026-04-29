@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -52,6 +53,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.flats.R
@@ -80,6 +82,23 @@ private val OuterPadding = 20.dp
 private val GapBeforeImages = 16.dp
 private val HighlightPad = 8.dp
 
+private fun Modifier.bottomShadow(
+    height: Dp = 12.dp,
+    color: Color = Color(0x0A000000)
+): Modifier = this.then(
+    Modifier.drawBehind {
+        val shadowPx = height.toPx()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(color, Color.Transparent),
+                startY = size.height,
+                endY = size.height + shadowPx
+            ),
+            topLeft = Offset(0f, size.height),
+            size = size.copy(height = shadowPx)
+        )
+    }
+)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ComparisonResultScreen(
@@ -97,7 +116,12 @@ fun ComparisonResultScreen(
         try {
             val all = CardRepository.getCards()
             cards = selectedIds.mapNotNull { id -> all.find { it.cardId == id } }
-            criteria = CardRepository.getCriteria()
+            val commonCriteriaIds = cards
+                .map { it.criteriaIds.toSet() }
+                .reduceOrNull { acc, set -> acc intersect set }
+                ?: emptySet()
+            criteria = CardRepository.getCriteria(activeOnly = false)
+                .filter { it.criteriaId in commonCriteriaIds }
             scores = CardRepository.getAllScores()
                 .filter { it.cardId in selectedIds }
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -149,6 +173,7 @@ fun ComparisonResultScreen(
     val bestIndex: Int? = bestCardId?.let { id -> cards.indexOfFirst { it.cardId == id }.takeIf { it >= 0 } }
 
     val horizontalScroll = rememberScrollState()
+    val verticalScroll = rememberScrollState()
 
     var contentTopY by remember { mutableStateOf(0) }
     var totalRowBottomY by remember { mutableStateOf(0) }
@@ -169,7 +194,8 @@ fun ComparisonResultScreen(
                 actions = listOf(
                     TopBarAction(R.drawable.ic_info) { showInfoSheet = true },
                     TopBarAction(R.drawable.ic_reset) { onBack() }
-                )
+                ),
+                modifier = if (verticalScroll.value > 0) Modifier.bottomShadow() else Modifier
             )
 
             CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
@@ -187,6 +213,7 @@ fun ComparisonResultScreen(
                         if (bestIndex != null && totalRowBottomY > 0) {
                             val density = LocalDensity.current
                             val offsetXDp = with(density) { (-horizontalScroll.value).toDp() }
+                            val offsetYDp = with(density) { (-verticalScroll.value).toDp() }
                             val highlightHeightDp = with(density) {
                                 (totalRowBottomY - contentTopY).toDp()
                             } - 24.dp + HighlightPad * 2
@@ -198,7 +225,10 @@ fun ComparisonResultScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .offset(x = offsetXDp + (ImageSize + ImageSpacing) * bestIndex - HighlightPad, y = 24.dp - HighlightPad)
+                                        .offset(
+                                            x = offsetXDp + (ImageSize + ImageSpacing) * bestIndex - HighlightPad,
+                                            y = offsetYDp + 24.dp - HighlightPad
+                                        )
                                         .width(ImageSize + HighlightPad * 2)
                                         .height(highlightHeightDp)
                                         .border(1.dp, Blue, RoundedCornerShape(10.dp))
@@ -209,8 +239,8 @@ fun ComparisonResultScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .verticalScroll(rememberScrollState())
-                                .padding(bottom = 80.dp)
+                                .verticalScroll(verticalScroll)
+                                .padding(bottom = 104.dp)
                         ) {
                             Spacer(modifier = Modifier.height(24.dp))
 
