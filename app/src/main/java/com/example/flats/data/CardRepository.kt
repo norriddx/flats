@@ -348,4 +348,89 @@ object CardRepository {
             }
         }
     }
+
+    suspend fun recalculateWeights() = withRetry {
+        val userId = client.auth.currentUserOrNull()?.id
+            ?: throw Exception("Пользователь не авторизован")
+
+        val activeCriteria = client.postgrest
+            .from("criteria")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    eq("is_active", true)
+                }
+            }
+            .decodeList<Criteria>()
+
+        if (activeCriteria.isEmpty()) return@withRetry
+
+        val eligibleCards = client.postgrest
+            .from("card")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    eq("is_archived", false)
+                    eq("is_draft", false)
+                }
+            }
+            .decodeList<Card>()
+
+        if (eligibleCards.size < 4) {
+            val equal = 1.0 / activeCriteria.size
+            activeCriteria.forEach { c ->
+                client.postgrest.from("criteria").update({
+                    set("weight", equal)
+                }) {
+                    filter { eq("criteria_id", c.criteriaId) }
+                }
+            }
+            return@withRetry
+        }
+
+        val eligibleCardIds = eligibleCards.map { it.cardId }
+        val scores = client.postgrest
+            .from("card_criteria_score")
+            .select {
+                filter { isIn("card_id", eligibleCardIds) }
+            }
+            .decodeList<CardCriteriaScore>()
+
+        val rawWeights = mutableMapOf<Long, Double>()
+
+        activeCriteria.forEach { c ->
+            val cScores = scores.filter { it.criteriaId == c.criteriaId }
+            if (cScores.isEmpty()) {
+                rawWeights[c.criteriaId] = -1.0
+            } else {
+                val raw = when (c.type) {
+                    "checklist" -> cScores.count { it.value >= 0.5 }.toDouble() / cScores.size
+                    "score" -> ((cScores.map { it.value }.average() - 1.0) / 4.0).coerceIn(0.0, 1.0)
+                    else -> 0.0
+                }
+                rawWeights[c.criteriaId] = raw
+            }
+        }
+
+        val withData = rawWeights.values.filter { it >= 0.0 }
+        val fillValue = if (withData.isNotEmpty()) withData.average() else 0.0
+        val noDataIds = rawWeights.entries.filter { it.value < 0.0 }.map { it.key }
+        noDataIds.forEach { rawWeights[it] = fillValue }
+
+        val sum = rawWeights.values.sum()
+        val finalWeights = if (sum == 0.0) {
+            val equal = 1.0 / activeCriteria.size
+            activeCriteria.associate { it.criteriaId to equal }
+        } else {
+            rawWeights.mapValues { it.value / sum }
+        }
+
+        finalWeights.forEach { (id, w) ->
+            client.postgrest.from("criteria").update({
+                set("weight", w)
+            }) {
+                filter { eq("criteria_id", id) }
+            }
+        }
+    }
 }

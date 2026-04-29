@@ -114,6 +114,7 @@ fun ComparisonResultScreen(
     LaunchedEffect(selectedIds) {
         isLoading = true
         try {
+            CardRepository.recalculateWeights()
             val all = CardRepository.getCards()
             cards = selectedIds.mapNotNull { id -> all.find { it.cardId == id } }
             val commonCriteriaIds = cards
@@ -142,13 +143,16 @@ fun ComparisonResultScreen(
     }
 
     val totalByCard: Map<Long, Double> = cards.associate { card ->
-        val checked = checkedTotalByCard[card.cardId] ?: 0
-        val scoreSum = scoreCriteria.sumOf { c ->
-            scores.find { it.cardId == card.cardId && it.criteriaId == c.criteriaId }
-                ?.value?.toInt() ?: 0
-        }
-        val maxTotal = checklistCriteria.size + scoreCriteria.size * 5
-        val rating = if (maxTotal > 0) (checked + scoreSum).toDouble() / maxTotal * 5.0 else 0.0
+        val rating = criteria.sumOf { c ->
+            val score = scores.find { it.cardId == card.cardId && it.criteriaId == c.criteriaId }
+            val normalized = when {
+                score == null -> 0.0
+                c.type == "checklist" -> if (score.value >= 0.5) 1.0 else 0.0
+                c.type == "score" -> ((score.value - 1.0) / 4.0).coerceIn(0.0, 1.0)
+                else -> 0.0
+            }
+            normalized * c.weight
+        } * 5.0
         card.cardId to rating
     }
 
@@ -240,7 +244,7 @@ fun ComparisonResultScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .verticalScroll(verticalScroll)
-                                .padding(bottom = 104.dp)
+                                .padding(bottom = 128.dp)
                         ) {
                             Spacer(modifier = Modifier.height(24.dp))
 

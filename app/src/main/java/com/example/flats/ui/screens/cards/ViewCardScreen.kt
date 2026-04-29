@@ -265,6 +265,7 @@ fun ViewCardScreen(
                                     scope.launch {
                                         try {
                                             CardRepository.deleteCard(cardId)
+                                            CardRepository.recalculateWeights()
                                             shouldNavigateBack = true
                                         } catch (e: kotlinx.coroutines.CancellationException) {
                                         } catch (e: Exception) {
@@ -534,6 +535,7 @@ fun ViewCardScreen(
                                 scope.launch {
                                     try {
                                         CardRepository.unarchiveCard(cardId)
+                                        CardRepository.recalculateWeights()
                                         shouldNavigateBack = true
                                     } catch (e: kotlinx.coroutines.CancellationException) {
                                     } catch (e: Exception) {
@@ -557,6 +559,7 @@ fun ViewCardScreen(
                                     scope.launch {
                                         try {
                                             CardRepository.archiveCard(cardId)
+                                            CardRepository.recalculateWeights()
                                             shouldNavigateBack = true
                                         } catch (e: kotlinx.coroutines.CancellationException) {
                                         } catch (e: Exception) {

@@ -390,6 +390,7 @@ fun CriteriaScreen(
                                         currentScore = scoreItems,
                                         type = "score"
                                     )
+                                    CardRepository.recalculateWeights()
                                     val all = CardRepository.getCriteria()
                                     val newChecklist = all.filter { it.type == "checklist" }
                                         .map { it.criteriaId as Long? to it.name }

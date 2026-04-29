@@ -249,6 +249,8 @@ fun CreateCardScreen(
 
                 CardRepository.insertCardCriteriaScores(checklistScores + sliderScores)
 
+                CardRepository.recalculateWeights()
+
                 shouldNavigateBack = true
             } catch (e: kotlinx.coroutines.CancellationException) {
             } catch (e: Exception) {
