@@ -180,7 +180,7 @@ fun ViewCardScreen(
     LaunchedEffect(cardId) {
         try {
             val loadedCard = CardRepository.getCardById(cardId)
-            val loadedCriteria = CardRepository.getCriteria()
+            val loadedCriteria = CardRepository.getCriteriaForCard(cardId)
             val loadedScores = CardRepository.getAllScores().filter { it.cardId == cardId }
             criteria = loadedCriteria
             scores = loadedScores

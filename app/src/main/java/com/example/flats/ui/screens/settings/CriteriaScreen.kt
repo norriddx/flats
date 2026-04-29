@@ -59,6 +59,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.example.flats.ui.components.NotificationSheet
 import com.example.flats.ui.theme.LightBlue
+import kotlinx.coroutines.launch
 
 private fun Modifier.topShadow(
     height: Dp = 12.dp,
@@ -149,6 +150,47 @@ private fun CriteriaShimmer() {
     }
 }
 
+private suspend fun saveCriteria(
+    initialChecklist: List<Pair<Long?, String>>? = null,
+    currentChecklist: List<Pair<Long?, String>>? = null,
+    initialScore: List<Pair<Long?, String>>? = null,
+    currentScore: List<Pair<Long?, String>>? = null,
+    type: String
+) {
+    val initial = if (type == "checklist") initialChecklist!! else initialScore!!
+    val current = if (type == "checklist") currentChecklist!! else currentScore!!
+
+    val initialIds = initial.mapNotNull { it.first }.toSet()
+    val currentIds = current.mapNotNull { it.first }.toSet()
+
+    // deactivate removed
+    val removedIds = initialIds - currentIds
+    removedIds.forEach { id ->
+        CardRepository.deactivateCriteria(id)
+    }
+
+    // process new and renamed
+    current.forEach { (id, name) ->
+        if (id == null) {
+            // new — try to find existing by name+type
+            val existing = CardRepository.findCriteriaByNameAndType(name, type)
+            if (existing != null) {
+                if (!existing.isActive) {
+                    CardRepository.activateCriteria(existing.criteriaId)
+                }
+            } else {
+                CardRepository.insertCriteria(name, type)
+            }
+        } else {
+            // existing — check if name changed
+            val initialName = initial.find { it.first == id }?.second
+            if (initialName != null && initialName != name) {
+                CardRepository.updateCriteriaName(id, name)
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CriteriaScreen(
@@ -161,6 +203,9 @@ fun CriteriaScreen(
     var isSaving by remember { mutableStateOf(false) }
     var hasChanges by remember { mutableStateOf(false) }
     var isLoaded by remember { mutableStateOf(false) }
+
+    var initialChecklist by remember { mutableStateOf(listOf<Pair<Long?, String>>()) }
+    var initialScore by remember { mutableStateOf(listOf<Pair<Long?, String>>()) }
 
     var checklistItems by remember { mutableStateOf(listOf<Pair<Long?, String>>()) }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
@@ -179,9 +224,11 @@ fun CriteriaScreen(
             val checklist = all.filter { it.type == "checklist" }
                 .map { it.criteriaId as Long? to it.name }
             checklistItems = checklist
+            initialChecklist = checklist
             val score = all.filter { it.type == "score" }
                 .map { it.criteriaId as Long? to it.name }
             scoreItems = score
+            initialScore = score
             isLoaded = true
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -319,13 +366,49 @@ fun CriteriaScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SecondaryButton(
                         text = "Отменить изменения",
-                        onClick = { /* TODO */ },
+                        onClick = {
+                            checklistItems = initialChecklist
+                            scoreItems = initialScore
+                            hasChanges = false
+                        },
                         enabled = hasChanges && !isSaving && isLoaded,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         text = "Сохранить",
-                        onClick = { /* TODO */ },
+                        onClick = {
+                            isSaving = true
+                            scope.launch {
+                                try {
+                                    saveCriteria(
+                                        initialChecklist = initialChecklist,
+                                        currentChecklist = checklistItems,
+                                        type = "checklist"
+                                    )
+                                    saveCriteria(
+                                        initialScore = initialScore,
+                                        currentScore = scoreItems,
+                                        type = "score"
+                                    )
+                                    val all = CardRepository.getCriteria()
+                                    val newChecklist = all.filter { it.type == "checklist" }
+                                        .map { it.criteriaId as Long? to it.name }
+                                    val newScore = all.filter { it.type == "score" }
+                                        .map { it.criteriaId as Long? to it.name }
+                                    checklistItems = newChecklist
+                                    initialChecklist = newChecklist
+                                    scoreItems = newScore
+                                    initialScore = newScore
+                                    hasChanges = false
+                                } catch (e: kotlinx.coroutines.CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, e.message ?: "Ошибка сохранения", Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    isSaving = false
+                                }
+                            }
+                        },
                         enabled = hasChanges && !isSaving && isLoaded,
                         modifier = Modifier.weight(1f)
                     )

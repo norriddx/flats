@@ -17,5 +17,6 @@ data class Card(
     val utilitiesIncluded: Boolean = false,
     val imageUrls: List<String> = emptyList(),
     val pricePeriod: String? = null,
-    val contact: String? = null
+    val contact: String? = null,
+    val criteriaIds: List<Long> = emptyList()
 )

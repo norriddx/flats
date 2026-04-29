@@ -188,14 +188,17 @@ object CardRepository {
         }
     }
 
-    suspend fun getCriteria(): List<Criteria> = withRetry {
+    suspend fun getCriteria(activeOnly: Boolean = true): List<Criteria> = withRetry {
         val userId = client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")
 
         client.postgrest
             .from("criteria")
             .select {
-                filter { eq("user_id", userId) }
+                filter {
+                    eq("user_id", userId)
+                    if (activeOnly) eq("is_active", true)
+                }
             }
             .decodeList<Criteria>()
     }
@@ -235,6 +238,7 @@ object CardRepository {
                     set("image_urls", card.imageUrls)
                     set("price_period", card.pricePeriod)
                     set("contact", card.contact)
+                    set("criteria_ids", card.criteriaIds)
                 }
             ) {
                 select()
@@ -254,5 +258,94 @@ object CardRepository {
     fun currentUserId(): String {
         return client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")
+    }
+
+
+    suspend fun getCriteriaForCard(cardId: Long): List<Criteria> = withRetry {
+        val userId = client.auth.currentUserOrNull()?.id
+            ?: throw Exception("Пользователь не авторизован")
+
+        val card = client.postgrest
+            .from("card")
+            .select {
+                filter { eq("card_id", cardId) }
+            }
+            .decodeSingle<Card>()
+
+        if (card.criteriaIds.isEmpty()) return@withRetry emptyList()
+
+        client.postgrest
+            .from("criteria")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    isIn("criteria_id", card.criteriaIds)
+                }
+            }
+            .decodeList<Criteria>()
+    }
+
+    suspend fun deactivateCriteria(criteriaId: Long) {
+        withRetry {
+            client.postgrest.from("criteria").update({
+                set("is_active", false)
+            }) {
+                filter { eq("criteria_id", criteriaId) }
+            }
+        }
+    }
+
+    suspend fun activateCriteria(criteriaId: Long) {
+        withRetry {
+            client.postgrest.from("criteria").update({
+                set("is_active", true)
+            }) {
+                filter { eq("criteria_id", criteriaId) }
+            }
+        }
+    }
+
+    suspend fun findCriteriaByNameAndType(name: String, type: String): Criteria? = withRetry {
+        val userId = client.auth.currentUserOrNull()?.id
+            ?: throw Exception("Пользователь не авторизован")
+
+        client.postgrest
+            .from("criteria")
+            .select {
+                filter {
+                    eq("user_id", userId)
+                    eq("name", name)
+                    eq("type", type)
+                }
+            }
+            .decodeList<Criteria>()
+            .firstOrNull()
+    }
+
+    suspend fun insertCriteria(name: String, type: String): Criteria = withRetry {
+        val userId = client.auth.currentUserOrNull()?.id
+            ?: throw Exception("Пользователь не авторизован")
+
+        val newCriteria = Criteria(
+            userId = userId,
+            name = name,
+            type = type,
+            isActive = true
+        )
+
+        client.postgrest
+            .from("criteria")
+            .insert(newCriteria) { select() }
+            .decodeSingle<Criteria>()
+    }
+
+    suspend fun updateCriteriaName(criteriaId: Long, name: String) {
+        withRetry {
+            client.postgrest.from("criteria").update({
+                set("name", name)
+            }) {
+                filter { eq("criteria_id", criteriaId) }
+            }
+        }
     }
 }

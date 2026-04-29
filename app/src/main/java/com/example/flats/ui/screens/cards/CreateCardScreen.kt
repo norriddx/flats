@@ -190,8 +190,11 @@ fun CreateCardScreen(
                 }
                 val allUrls = existingUrls + newUrls
 
+                val activeCriteriaIds = criteria.map { it.criteriaId }
+
                 val savedCard = if (isEditMode) {
                     val existingCard = CardRepository.getCardById(cardId!!)
+                    val mergedCriteriaIds = existingCard.criteriaIds
                     val updated = existingCard.copy(
                         name = name.ifBlank { "Без названия" },
                         address = address.ifBlank { null },
@@ -202,7 +205,8 @@ fun CreateCardScreen(
                         pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                         utilitiesIncluded = utilitiesIncluded,
                         isDraft = isDraft,
-                        imageUrls = allUrls
+                        imageUrls = allUrls,
+                        criteriaIds = mergedCriteriaIds
                     )
                     CardRepository.updateCard(updated)
                 } else {
@@ -217,7 +221,8 @@ fun CreateCardScreen(
                         pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                         utilitiesIncluded = utilitiesIncluded,
                         isDraft = isDraft,
-                        imageUrls = allUrls
+                        imageUrls = allUrls,
+                        criteriaIds = activeCriteriaIds
                     )
                     CardRepository.insertCard(card)
                 }
