@@ -181,6 +181,7 @@ fun ComparisonResultScreen(
 
     var contentTopY by remember { mutableStateOf(0) }
     var totalRowBottomY by remember { mutableStateOf(0) }
+    var imagesRowTopY by remember { mutableStateOf(0) }
     var showInfoSheet by remember { mutableStateOf(false) }
 
     Box(
@@ -214,13 +215,11 @@ fun ComparisonResultScreen(
                                 contentTopY = coords.positionInRoot().y.toInt()
                             }
                     ) {
-                        if (bestIndex != null && totalRowBottomY > 0) {
+                        if (bestIndex != null && totalRowBottomY > 0 && imagesRowTopY > 0) {
                             val density = LocalDensity.current
                             val offsetXDp = with(density) { (-horizontalScroll.value).toDp() }
-                            val offsetYDp = with(density) { (-verticalScroll.value).toDp() }
-                            val highlightHeightDp = with(density) {
-                                (totalRowBottomY - contentTopY).toDp()
-                            } - 24.dp + HighlightPad * 2
+                            val highlightTopDp = with(density) { (imagesRowTopY - contentTopY).toDp() }
+                            val highlightHeightDp = with(density) { (totalRowBottomY - imagesRowTopY).toDp() }
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -231,10 +230,10 @@ fun ComparisonResultScreen(
                                     modifier = Modifier
                                         .offset(
                                             x = offsetXDp + (ImageSize + ImageSpacing) * bestIndex - HighlightPad,
-                                            y = offsetYDp + 24.dp - HighlightPad
+                                            y = highlightTopDp - HighlightPad
                                         )
                                         .width(ImageSize + HighlightPad * 2)
-                                        .height(highlightHeightDp)
+                                        .height(highlightHeightDp + HighlightPad * 2)
                                         .border(1.dp, Blue, RoundedCornerShape(10.dp))
                                 )
                             }
@@ -248,7 +247,13 @@ fun ComparisonResultScreen(
                         ) {
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            Row(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onGloballyPositioned { coords ->
+                                        imagesRowTopY = coords.positionInRoot().y.toInt()
+                                    }
+                            ) {
                                 Spacer(modifier = Modifier.width(OuterPadding + LeftColumnWidth + GapBeforeImages))
                                 Row(
                                     modifier = Modifier
