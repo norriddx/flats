@@ -199,6 +199,7 @@ object CardRepository {
                     eq("user_id", userId)
                     if (activeOnly) eq("is_active", true)
                 }
+                order("criteria_id", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
             }
             .decodeList<Criteria>()
     }
