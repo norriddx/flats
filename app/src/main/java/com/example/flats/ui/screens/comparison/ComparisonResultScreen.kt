@@ -77,9 +77,10 @@ import com.example.flats.ui.theme.Typography
 
 private val ImageSize = 64.dp
 private val ImageSpacing = 16.dp
-private val LeftColumnWidth = 140.dp
+private val LeftColumnWidth = 120.dp
 private val OuterPadding = 20.dp
-private val GapBeforeImages = 16.dp
+private val GapBeforeImages = 32.dp
+private val ClipStart = OuterPadding + LeftColumnWidth + 32.dp
 private val HighlightPad = 8.dp
 
 private fun Modifier.bottomShadow(
@@ -103,28 +104,35 @@ private fun Modifier.bottomShadow(
 @Composable
 fun ComparisonResultScreen(
     selectedIds: List<Long>,
+    cards: List<Card>,
+    criteria: List<Criteria>,
+    scores: List<CardCriteriaScore>,
+    loaded: Boolean,
+    onDataLoaded: (List<Card>, List<Criteria>, List<CardCriteriaScore>) -> Unit,
     onBack: () -> Unit,
     onNavigateToViewCard: (Long) -> Unit
 ) {
-    var cards by remember { mutableStateOf<List<Card>>(emptyList()) }
-    var criteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
-    var scores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    var isLoading by remember { mutableStateOf(!loaded) }
 
     LaunchedEffect(selectedIds) {
+        if (loaded) {
+            isLoading = false
+            return@LaunchedEffect
+        }
         isLoading = true
         try {
             CardRepository.recalculateWeights()
             val all = CardRepository.getCards()
-            cards = selectedIds.mapNotNull { id -> all.find { it.cardId == id } }
-            val commonCriteriaIds = cards
+            val loadedCards = selectedIds.mapNotNull { id -> all.find { it.cardId == id } }
+            val commonCriteriaIds = loadedCards
                 .map { it.criteriaIds.toSet() }
                 .reduceOrNull { acc, set -> acc intersect set }
                 ?: emptySet()
-            criteria = CardRepository.getCriteria(activeOnly = false)
+            val loadedCriteria = CardRepository.getCriteria(activeOnly = false)
                 .filter { it.criteriaId in commonCriteriaIds }
-            scores = CardRepository.getAllScores()
+            val loadedScores = CardRepository.getAllScores()
                 .filter { it.cardId in selectedIds }
+            onDataLoaded(loadedCards, loadedCriteria, loadedScores)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (_: Exception) {
@@ -223,8 +231,8 @@ fun ComparisonResultScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clipToBounds()
                                     .padding(start = OuterPadding + LeftColumnWidth + GapBeforeImages, end = OuterPadding)
+                                    .clipToBounds()
                             ) {
                                 Box(
                                     modifier = Modifier

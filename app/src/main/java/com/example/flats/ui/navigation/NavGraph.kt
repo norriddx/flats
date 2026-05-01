@@ -26,6 +26,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.flats.data.OnboardingPreferences
 import com.example.flats.data.SupabaseClient
+import com.example.flats.data.model.Card
+import com.example.flats.data.model.CardCriteriaScore
+import com.example.flats.data.model.Criteria
 import com.example.flats.ui.components.BottomBar
 import com.example.flats.ui.components.BottomNavItem
 import com.example.flats.ui.screens.auth.AuthScreen
@@ -57,6 +60,11 @@ fun NavGraph(navController: NavHostController) {
     var comparisonSelectedIds by rememberSaveable { mutableStateOf<List<Long>>(emptyList()) }
     var cardsSearchQuery by remember { mutableStateOf("") }
     var cardsAppliedFilter by remember { mutableStateOf(FilterState()) }
+
+    var comparisonCards by remember { mutableStateOf<List<Card>>(emptyList()) }
+    var comparisonCriteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
+    var comparisonScores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
+    var comparisonLoaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(onboardingCompleted, sessionStatus) {
         if (startDestination != null) return@LaunchedEffect
@@ -199,8 +207,22 @@ fun NavGraph(navController: NavHostController) {
             composable(Routes.COMPARISON_RESULT) {
                 ComparisonResultScreen(
                     selectedIds = comparisonSelectedIds,
+                    cards = comparisonCards,
+                    criteria = comparisonCriteria,
+                    scores = comparisonScores,
+                    loaded = comparisonLoaded,
+                    onDataLoaded = { c, cr, s ->
+                        comparisonCards = c
+                        comparisonCriteria = cr
+                        comparisonScores = s
+                        comparisonLoaded = true
+                    },
                     onBack = {
                         comparisonSelectedIds = emptyList()
+                        comparisonCards = emptyList()
+                        comparisonCriteria = emptyList()
+                        comparisonScores = emptyList()
+                        comparisonLoaded = false
                         navController.popBackStack()
                     },
                     onNavigateToViewCard = { cardId ->
@@ -247,8 +269,12 @@ fun NavGraph(navController: NavHostController) {
                 onItemClick = { route ->
                     if (route != currentRoute) {
                         navController.navigate(route) {
-                            popUpTo(Routes.CARDS) { inclusive = false }
+                            popUpTo(Routes.CARDS) {
+                                inclusive = false
+                                saveState = true
+                            }
                             launchSingleTop = true
+                            restoreState = true
                         }
                     }
                 },
