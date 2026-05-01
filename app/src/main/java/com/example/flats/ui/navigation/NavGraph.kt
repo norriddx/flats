@@ -43,6 +43,7 @@ import com.example.flats.ui.screens.settings.CriteriaScreen
 import com.example.flats.ui.screens.settings.SettingsScreen
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import com.example.flats.ui.components.FilterState
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -54,6 +55,8 @@ fun NavGraph(navController: NavHostController) {
     var startDestination by remember { mutableStateOf<String?>(null) }
 
     var comparisonSelectedIds by rememberSaveable { mutableStateOf<List<Long>>(emptyList()) }
+    var cardsSearchQuery by remember { mutableStateOf("") }
+    var cardsAppliedFilter by remember { mutableStateOf(FilterState()) }
 
     LaunchedEffect(onboardingCompleted, sessionStatus) {
         if (startDestination != null) return@LaunchedEffect
@@ -120,6 +123,10 @@ fun NavGraph(navController: NavHostController) {
                     },
                     onNavigateToFavourites = { navController.navigate(Routes.FAVOURITES) },
                     onNavigateToArchive = { navController.navigate(Routes.ARCHIVE) },
+                    searchQuery = cardsSearchQuery,
+                    onSearchQueryChange = { cardsSearchQuery = it },
+                    appliedFilter = cardsAppliedFilter,
+                    onAppliedFilterChange = { cardsAppliedFilter = it },
                     onLogout = {
                         navController.navigate(Routes.AUTH) {
                             popUpTo(0) { inclusive = true }

@@ -50,6 +50,36 @@ data class FilterState(
                 squareStart > 0f || squareEnd < 1f ||
                 checkedCriteriaIds.isNotEmpty() ||
                 scoreValues.isNotEmpty()
+
+    companion object {
+        val Saver: androidx.compose.runtime.saveable.Saver<FilterState, Any> =
+            androidx.compose.runtime.saveable.listSaver(
+                save = { s ->
+                    listOf(
+                        s.priceStart,
+                        s.priceEnd,
+                        s.squareStart,
+                        s.squareEnd,
+                        s.checkedCriteriaIds.toList(),
+                        s.scoreValues.keys.toList(),
+                        s.scoreValues.values.toList()
+                    )
+                },
+                restore = { l ->
+                    val checked = (l[4] as List<*>).filterIsInstance<Long>().toSet()
+                    val keys = (l[5] as List<*>).filterIsInstance<Long>()
+                    val vals = (l[6] as List<*>).filterIsInstance<Int>()
+                    FilterState(
+                        priceStart = l[0] as Float,
+                        priceEnd = l[1] as Float,
+                        squareStart = l[2] as Float,
+                        squareEnd = l[3] as Float,
+                        checkedCriteriaIds = checked,
+                        scoreValues = keys.zip(vals).toMap()
+                    )
+                }
+            )
+    }
 }
 
 private fun Modifier.topShadow(

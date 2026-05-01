@@ -126,17 +126,19 @@ private fun ShimmerCardItem(brush: Brush) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CardsScreen(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    appliedFilter: FilterState,
+    onAppliedFilterChange: (FilterState) -> Unit,
     onNavigateToCreateCard: () -> Unit,
     onNavigateToViewCard: (Long) -> Unit,
     onNavigateToFavourites: () -> Unit,
     onNavigateToArchive: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
     var cards by remember { mutableStateOf<List<Card>?>(null) }
     var toggleCardId by remember { mutableStateOf<Long?>(null) }
     var filter by remember { mutableStateOf(FilterState()) }
-    var appliedFilter by remember { mutableStateOf(FilterState()) }
     var showFilterSheet by remember { mutableStateOf(false) }
     var checklistCriteria by remember { mutableStateOf<List<Criteria>>(emptyList()) }
     var allScores by remember { mutableStateOf<List<CardCriteriaScore>>(emptyList()) }
@@ -276,7 +278,7 @@ fun CardsScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         TextField(
                             value = searchQuery,
-                            onValueChange = { searchQuery = it },
+                            onValueChange = onSearchQueryChange,
                             placeholder = "Найти",
                             leadingIcon = {
                                 Icon(
@@ -324,7 +326,7 @@ fun CardsScreen(
                     ) {
                         TextField(
                             value = searchQuery,
-                            onValueChange = { searchQuery = it },
+                            onValueChange = onSearchQueryChange,
                             placeholder = "Найти",
                             leadingIcon = {
                                 Icon(
@@ -438,7 +440,7 @@ fun CardsScreen(
                 scoreCriteria = scoreCriteria,
                 onFilterChange = { filter = it },
                 onApply = {
-                    appliedFilter = filter
+                    onAppliedFilterChange(filter)
                     showFilterSheet = false
                 },
                 onDismiss = { showFilterSheet = false }
