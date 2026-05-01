@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.flats.ui.theme.Blue
 import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.Gray
 import com.example.flats.ui.theme.LightBlue
@@ -61,7 +62,7 @@ fun TextField(
             focusedContainerColor   = LightBlue,
             unfocusedContainerColor = LightBlue,
             disabledContainerColor  = LightBlue,
-            focusedIndicatorColor   = Color.Transparent,
+            focusedIndicatorColor   = Blue,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor  = Color.Transparent,
             cursorColor             = Dark

@@ -137,13 +137,16 @@ fun CardItem(
             if (card.address != null) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_location),
                         contentDescription = null,
                         tint = Gray,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier
+                            .height(16.dp)
+                            .size(16.dp)
+                            .wrapContentHeight(Alignment.CenterVertically)
                     )
                     Text(
                         text = card.address,

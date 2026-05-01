@@ -55,6 +55,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.example.flats.ui.components.NotificationSheet
@@ -115,31 +116,45 @@ private fun CriteriaShimmer() {
         end = Offset(translateAnim, 0f)
     )
 
+    val sections = listOf(100.dp to 6, 180.dp to 4)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 20.dp)
     ) {
-        Spacer(modifier = Modifier.height(0.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        repeat(2) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.3f)
-                    .height(20.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(shimmerBrush)
-            )
-            FlowRow(
+        sections.forEachIndexed { index, (titleWidth, chipCount) ->
+            if (index > 0) Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf(0.4f, 0.5f, 0.35f, 0.45f, 0.55f).forEach { fraction ->
+                Box(
+                    modifier = Modifier
+                        .width(titleWidth)
+                        .height(24.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(shimmerBrush)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(shimmerBrush)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(chipCount) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(fraction)
+                            .fillMaxWidth()
                             .height(48.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(shimmerBrush)
@@ -256,9 +271,7 @@ fun CriteriaScreen(
 
             if (!isLoaded) {
                 Box(modifier = Modifier.weight(1f)) {
-                    Column(modifier = Modifier.padding(top = 16.dp)) {
-                        CriteriaShimmer()
-                    }
+                    CriteriaShimmer()
                 }
             } else {
                 Column(
