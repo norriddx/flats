@@ -20,7 +20,8 @@ data class CianListing(
     val price: Double? = null,
     val square: Double? = null,
     val description: String? = null,
-    val imageUrls: List<String> = emptyList()
+    val imageUrls: List<String> = emptyList(),
+    val utilitiesIncluded: Boolean? = null
 )
 
 object CianParser {
@@ -133,13 +134,16 @@ object CianParser {
         val square = squareRegex.find(areaSource)
             ?.groupValues?.get(1)?.replace(",", ".")?.toDoubleOrNull()
 
+        val utilitiesIncluded = detectUtilitiesIncluded(html)
+
         return CianListing(
             name = name?.takeIf { it.isNotBlank() },
             address = address?.let { simplifyAddress(it) }?.takeIf { it.isNotBlank() },
             price = price,
             square = square,
             description = description?.takeIf { it.isNotBlank() },
-            imageUrls = images.distinct()
+            imageUrls = images.distinct(),
+            utilitiesIncluded = utilitiesIncluded
         )
     }
 
@@ -231,6 +235,19 @@ object CianParser {
         return url.replace(Regex("""-[2-9](\.\w+)(\?.*)?$"""), "-1$1$2")
     }
 
+    private fun detectUtilitiesIncluded(html: String): Boolean? {
+        if (Regex(""""utilitiesTerms"\s*:\s*\{[^}]*"includedInPrice"\s*:\s*true""").containsMatchIn(html)) return true
+
+        Regex(""""utilitiesTerms"\s*:\s*\{[^}]*"price"\s*:\s*(\d+)""").find(html)?.let {
+            if ((it.groupValues[1].toIntOrNull() ?: 0) > 0) return true
+        }
+
+        Regex(""""utilitiesTermsPrices"\s*:\s*\{\s*"rur"\s*:\s*(\d+)""").find(html)?.let {
+            if ((it.groupValues[1].toIntOrNull() ?: 0) > 0) return true
+        }
+
+        return null
+    }
     private fun String.unescape(): String = this
         .replace("&quot;", "\"")
         .replace("&#039;", "'")

@@ -200,6 +200,7 @@ fun CreateCardScreen(
                         if (listing.imageUrls.isNotEmpty()) {
                             images = images + listing.imageUrls
                         }
+                        if (listing.utilitiesIncluded == true) utilitiesIncluded = true
                     } catch (e: kotlinx.coroutines.CancellationException) {
                         throw e
                     } catch (e: Exception) {
