@@ -209,7 +209,6 @@ fun CreateCardScreen(
                             Toast.LENGTH_SHORT
                         ).show()
                     }
-                    effectiveDraft = true
                 }
 
                 val existingUrls = images.filterIsInstance<String>().map { imgUrl ->
@@ -535,6 +534,13 @@ fun CreateCardScreen(
             }
 
             // buttons
+            val checklistTypes = criteria.filter { it.type == "checklist" }
+            val scoreTypes = criteria.filter { it.type == "score" }
+            val hasChecklistFilled = checklistTypes.isEmpty() ||
+                    (checkedCriteriaIds intersect checklistTypes.map { it.criteriaId }.toSet()).isNotEmpty()
+            val hasScoresFilled = scoreTypes.isEmpty() ||
+                    (scoreValues.keys intersect scoreTypes.map { it.criteriaId }.toSet()).isNotEmpty()
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -554,7 +560,7 @@ fun CreateCardScreen(
                     Button(
                         text = "Сохранить",
                         onClick = { saveCard(isDraft = false) },
-                        enabled = name.isNotBlank() && !isSaving && isLoaded,
+                        enabled = name.isNotBlank() && !isSaving && isLoaded && hasChecklistFilled && hasScoresFilled,
                         modifier = Modifier.weight(1f)
                     )
                 }
