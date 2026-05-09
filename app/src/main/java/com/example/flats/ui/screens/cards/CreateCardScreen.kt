@@ -67,6 +67,7 @@ import com.example.flats.ui.theme.Dark
 import com.example.flats.ui.theme.LightBlue
 import com.example.flats.ui.theme.Typography
 import kotlinx.coroutines.launch
+import com.example.flats.data.CianParser
 
 private fun Modifier.topShadow(
     height: Dp = 12.dp,
@@ -124,6 +125,7 @@ fun CreateCardScreen(
     var scoreValues by remember { mutableStateOf<Map<Long, Int>>(emptyMap()) }
     var contact by remember { mutableStateOf("") }
     var isLoaded by remember { mutableStateOf(!isEditMode) }
+    var url by remember { mutableStateOf("") }
 
     var shouldNavigateBack by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
@@ -183,7 +185,38 @@ fun CreateCardScreen(
 
         scope.launch {
             try {
-                val existingUrls = images.filterIsInstance<String>()
+                var effectiveDraft = isDraft
+                if (!isEditMode && url.isNotBlank()) {
+                    try {
+                        val listing = CianParser.parse(url)
+                        if (name.isBlank()) listing.name?.let { name = it }
+                        if (address.isBlank()) listing.address?.let { address = it }
+                        if (square.isBlank()) listing.square?.let {
+                            square = if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString()
+                        }
+                        if (price.isBlank()) listing.price?.let {
+                            price = if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString()
+                        }
+                        if (listing.imageUrls.isNotEmpty()) {
+                            images = images + listing.imageUrls
+                        }
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            e.message ?: "Не удалось загрузить с Циан",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    effectiveDraft = true
+                }
+
+                val existingUrls = images.filterIsInstance<String>().map { imgUrl ->
+                    if (imgUrl.contains("cian", ignoreCase = true)) {
+                        CardRepository.uploadImageFromUrl(imgUrl)
+                    } else imgUrl
+                }
                 val newUris = images.filterIsInstance<Uri>()
                 val newUrls = newUris.map { uri ->
                     CardRepository.uploadImage(context, uri)
@@ -204,7 +237,7 @@ fun CreateCardScreen(
                         contact = contact.ifBlank { null },
                         pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                         utilitiesIncluded = utilitiesIncluded,
-                        isDraft = isDraft,
+                        isDraft = effectiveDraft,
                         imageUrls = allUrls,
                         criteriaIds = mergedCriteriaIds
                     )
@@ -220,7 +253,7 @@ fun CreateCardScreen(
                         contact = contact.ifBlank { null },
                         pricePeriod = if (price.isNotBlank()) pricePeriod else null,
                         utilitiesIncluded = utilitiesIncluded,
-                        isDraft = isDraft,
+                        isDraft = effectiveDraft,
                         imageUrls = allUrls,
                         criteriaIds = activeCriteriaIds
                     )
@@ -308,6 +341,18 @@ fun CreateCardScreen(
                         onValueChange = { name = it },
                         placeholder = "Например, «Квартира 1»"
                     )
+
+                    // link
+                    if (!isEditMode) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(text = "Ссылка", style = Typography.headlineSmall, color = Dark)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TextField(
+                            value = url,
+                            onValueChange = { url = it },
+                            placeholder = "Ссылка с ЦИАН (необязательно)"
+                        )
+                    }
 
                     // address
                     Spacer(modifier = Modifier.height(24.dp))

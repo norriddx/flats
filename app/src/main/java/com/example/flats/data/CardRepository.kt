@@ -106,6 +106,49 @@ object CardRepository {
         return client.storage.from("card-images").publicUrl(fileName)
     }
 
+    suspend fun uploadImageFromUrl(imageUrl: String): String {
+        val userId = client.auth.currentUserOrNull()?.id
+            ?: throw Exception("Пользователь не авторизован")
+
+        val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val connection = (java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection).apply {
+                setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                )
+                connectTimeout = 30_000
+                readTimeout = 30_000
+            }
+            connection.inputStream.use { it.readBytes() }
+        }
+
+        var bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: throw Exception("Не удалось декодировать изображение")
+
+        val maxSide = 1600
+        if (maxOf(bitmap.width, bitmap.height) > maxSide) {
+            val scale = maxSide.toFloat() / maxOf(bitmap.width, bitmap.height)
+            bitmap = android.graphics.Bitmap.createScaledBitmap(
+                bitmap,
+                (bitmap.width * scale).toInt(),
+                (bitmap.height * scale).toInt(),
+                true
+            )
+        }
+
+        val stream = java.io.ByteArrayOutputStream()
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, stream)
+        val compressedBytes = stream.toByteArray()
+
+        val fileName = "$userId/${UUID.randomUUID()}.jpg"
+        withRetry {
+            client.storage.from("card-images").upload(fileName, compressedBytes)
+        }
+
+        return client.storage.from("card-images").publicUrl(fileName)
+    }
+
     suspend fun getCards(): List<Card> = withRetry {
         val userId = client.auth.currentUserOrNull()?.id
             ?: throw Exception("Пользователь не авторизован")
